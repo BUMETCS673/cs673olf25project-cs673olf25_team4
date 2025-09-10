@@ -1,10 +1,10 @@
-\# Team 4 - beatmap
+# Team 4 - beatmap
 
 This file serves as short introduction of each team member on team 4 (beatmap) as required by Lab 1.
 
 
 
-\## Michael Laszlo (Security Leader)
+## Michael Laszlo (Security Leader)
 
 My name is Michael Laszlo and I have been a Software Engineer for the past 3 years with a focus
 
@@ -16,7 +16,7 @@ to be the security leader for team 4. Looking forward to seeing what the group c
 
 
 
-\## Sam Akerman - Team Leader and Configuration Leader
+## Sam Akerman - Team Leader and Configuration Leader
 
 My undergraduate degree is in Telecommunications Engineering, and I also hold an MS in Computer Science. 
 
@@ -30,7 +30,7 @@ also because one of our goals is to incorporate an AI agent into the backend—a
 
 
 
-\## Greg Grimaylo - QA Leader
+## Greg Grimaylo - QA Leader
 
 My name is Greg Grimaylo and I have been a Quality Assurance Automation Engineer for 2 years. My experience in Quality Assurance will help me server as the QA Leader for our group. 
 
@@ -38,7 +38,7 @@ I am looking forward to developing a project from the ground-up, as well as the 
 
 
 
-\## Ed Cavallero - Design and Implementation Leader
+## Ed Cavallero - Design and Implementation Leader
 
 My name is Ed Cavallero, and I have been working as a concert manager for the past two years. 
 
@@ -46,7 +46,7 @@ My undergraduate background is in music and business administration, with a part
 
 
 
-\## Zixuan Cheng - Design and Implementation Leader
+## Zixuan Cheng - Design and Implementation Leader
 
 My name is Zixuan Cheng. I graduated from Beijing University of Civil Engineering and Architecture with a major in Computer Science. I have some project experience, but not much teamwork experience, especially with remote projects. That’s why I’m really excited to join this team, and I hope to learn a lot together with all of you.
 
