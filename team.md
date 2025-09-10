@@ -52,3 +52,8 @@ My name is Zixuan Cheng. I graduated from Beijing University of Civil Engineerin
 
 I really hope our app will be helpful and make life easier for people. I’m super excited to work with my teammates, and it’s also my first time trying a Python project with front-end and back-end separation.
 
+## Zhehao Liao - Requirement Leader
+
+My name is Zhehao Liao, and I am pursuing a Master's degree in Computer Science at Boston University. My background is in Mathematics and Applied Mathematics, with experience in machine learning.  
+
+I am particularly interested in applying software engineering practices to real-world applications, such as our Beatmap project. I am excited to ensure that our design aligns with user needs and to collaborate with my teammates so that we can deliver a system that is both useful and user-friendly.
