@@ -30,16 +30,16 @@ This makes it especially useful for:
 
 ---
 
-## Core Features (Current & Planned)
+## Core Features (Planned)
 
 - **Concert search** by artist, city, or venue  
 - **Filters & sorting** for date, genre, price, and popularity  
 - **Event pages** with details, lineup, and ticket links  
 - **Favorites / Wishlist** to keep track of shows you’re interested in  
 - **User accounts** with secure sign-in  
-- **Interactive map view** *(planned)*  
-- **Calendar export (.ics)** *(planned)*  
-- **Email alerts for tracked artists** *(planned)*  
+- **Interactive map view**  
+- **Calendar export (.ics)**
+- **Email alerts for tracked artists** 
 
 ---
 
