@@ -1,0 +1,32 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  lint-and-test:
+    runs-on: ubuntu-latest
+    container:
+      image: python:3.11-alpine3.21
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Install dependencies
+      run: |
+        apk add --no-cache build-base  # required for some Python packages on Alpine
+        python -m pip install --upgrade pip
+        if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+        pip install flake8 pytest
+
+    - name: Run linter
+      run: |
+        flake8 code/backend code/providers
+
+    - name: Run tests
+      run: |
+        pytest code/backend/tests --maxfail=1 --disable-warnings -q
