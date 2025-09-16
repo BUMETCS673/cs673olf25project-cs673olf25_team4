@@ -63,3 +63,7 @@ Core functionality (search, filters, event details, and user accounts) will be b
 ## License
 
 This project is for academic purposes. License details TBD.  
+
+## How to run
+Under /code, run the following:
+docker-compose up --build
