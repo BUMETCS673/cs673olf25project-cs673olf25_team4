@@ -1,0 +1,32 @@
+version: "3.9"
+
+services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: concert_backend
+    ports:
+      - "8000:8000"
+    depends_on:
+      - ticketmaster_provider
+      - pollstar_provider
+    environment:
+      TICKETMASTER_API_URL: http://ticketmaster_provider:8001
+      POLLSTAR_API_URL: http://pollstar_provider:8002
+
+  ticketmaster_provider:
+    build:
+      context: ./providers/ticketmaster
+      dockerfile: Dockerfile
+    container_name: ticketmaster_provider
+    ports:
+      - "8001:8001"
+
+  pollstar_provider:
+    build:
+      context: ./providers/pollstar
+      dockerfile: Dockerfile
+    container_name: pollstar_provider
+    ports:
+      - "8002:8002"
