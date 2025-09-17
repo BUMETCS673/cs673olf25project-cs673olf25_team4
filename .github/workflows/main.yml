@@ -17,8 +17,8 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v4
 
-    - name: Install Linux headers and ethtool
-      run: sudo apt-get update && sudo apt-get install -y linux-headers-$(uname -r) linux-headers-generic ethtool
+    - name: Install dependencies
+      run: apt-get update && apt-get install -y linux-headers-$(uname -r) linux-headers-generic ethtool
 
     - name: Install dependencies
       run: |
