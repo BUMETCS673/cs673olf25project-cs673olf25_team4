@@ -4,7 +4,6 @@ on:
   push:
   pull_request:
 
-
 jobs:
   lint-and-test:
     runs-on: ubuntu-latest
@@ -23,11 +22,13 @@ jobs:
         apk add --no-cache build-base
         python -m pip install --upgrade pip
         pip install -r requirements.txt
+
         pip install flake8 pytest black
 
     - name: Auto-format with black
       run: |
         black ../backend ../providers --line-length 88
+
 
     - name: Run linter
       run: flake8 ../backend ../providers
