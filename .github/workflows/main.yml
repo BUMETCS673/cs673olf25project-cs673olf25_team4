@@ -22,16 +22,23 @@ jobs:
         apk add --no-cache build-base
         python -m pip install --upgrade pip
         pip install -r requirements.txt
-
-        pip install flake8 pytest black
+        pip install flake8 pytest black bandit safety pip-audit
 
     - name: Auto-format with black
       run: |
         black ../backend ../providers --line-length 88
 
-
     - name: Run linter
       run: flake8 ../backend ../providers
+
+    - name: Run security static analysis (Bandit)
+      run: bandit -r ../backend ../providers
+
+    - name: Check for vulnerable dependencies (pip-audit)
+      run: pip-audit --require-hashes
+
+    - name: Check dependencies against Safety DB
+      run: safety check --full-report
 
     - name: Run tests
       run: pytest tests --maxfail=1 --disable-warnings -q
