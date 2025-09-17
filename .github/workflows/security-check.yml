@@ -6,9 +6,26 @@ on:
   schedule:
     - cron: "0 3 * * *"  # run daily at 3 AM UTC
 
+# ------------------------------------------------------
+# Rollout Plan for Security Checks:
+#
+# Phase 1: Run security tools (Bandit, pip-audit, Safety)
+#          with `continue-on-error: true` so findings
+#          are visible but do NOT block PR merges.
+#
+# Phase 2: Fix or suppress issues (e.g. # nosec for
+#          false positives, update dependencies).
+#
+# Phase 3: Remove `continue-on-error: true` so that
+#          security findings become merge-blocking
+#          just like failing tests.
+#
+# ------------------------------------------------------
+
 jobs:
   security:
     runs-on: ubuntu-latest
+    continue-on-error: true  # TEMPORARY: remove in Phase 3
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
