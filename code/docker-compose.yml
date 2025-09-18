@@ -6,6 +6,8 @@ services:
     container_name: concert_backend
     ports:
       - "8000:8000"
+    volumes:
+      - ./frontend/public:/app/frontend_public:ro
     depends_on:
       - ticketmaster_provider
       - pollstar_provider
