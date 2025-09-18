@@ -2,8 +2,12 @@ name: Deploy to EC2
 
 on:
   push:
+    branches:
+      - main   # Only trigger on pushes to main
   pull_request:
-  
+    branches:
+      - main   # Only trigger PRs targeting main
+
 jobs:
   deploy:
     runs-on: ubuntu-latest
@@ -11,19 +15,18 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v3
         with:
-          fetch-depth: 0  # Fetch all history for all branches and tags
-          ref: ${{ github.ref_name || github.head_ref || 'main' }}  # Checkout the branch that triggered the workflow
+          fetch-depth: 0
+          ref: main   # Always checkout main
 
       - name: Deploy via SSH using deploy key
         uses: appleboy/ssh-action@v0.1.7
-        env:
-          BRANCH: ${{ github.ref_name || github.head_ref || 'main' }}
         with:
           host: ${{ secrets.EC2_HOST }}
           username: ec2-user
           key: ${{ secrets.EC2_DEPLOY_KEY }}
           script: |
-            echo "The branch is: $BRANCH"
+            echo "Deploying main branch"
+
             # Ensure Git is installed
             if ! command -v git &> /dev/null
             then
@@ -40,16 +43,16 @@ jobs:
               sudo docker-compose -f cs673olf25project-cs673olf25_team4/code/docker-compose.yml down
             fi
 
+            # Clone or update repo from main
             if [ ! -d "cs673olf25project-cs673olf25_team4" ]; then
-              git clone --branch "$BRANCH" git@github.com:BUMETCS673/cs673olf25project-cs673olf25_team4.git
+              git clone --branch main git@github.com:BUMETCS673/cs673olf25project-cs673olf25_team4.git
             else
               cd cs673olf25project-cs673olf25_team4
-              git fetch origin
-              git checkout "$BRANCH"
-              git pull origin "$BRANCH"
+              git fetch origin main:main
+              git checkout main
+              git pull origin main
               cd ..
             fi
-
 
             # Go into repo and redeploy containers
             cd cs673olf25project-cs673olf25_team4/code || exit 1
