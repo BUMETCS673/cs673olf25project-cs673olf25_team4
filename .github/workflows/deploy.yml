@@ -1,7 +1,9 @@
 name: Deploy to EC2
 
 on:
-  push:
+  workflow_run:
+    workflows: ["Build"]
+    types: [completed]
 
 jobs:
   deploy:
