@@ -1,10 +1,9 @@
 name: Deploy to EC2
 
 on:
-  workflow_run:
-    workflows: ["Build"]
-    types: [completed]
-
+  push:
+  pull_request:
+  
 jobs:
   deploy:
     runs-on: ubuntu-latest
