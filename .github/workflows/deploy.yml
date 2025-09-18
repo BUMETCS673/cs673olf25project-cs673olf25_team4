@@ -35,9 +35,11 @@ jobs:
             fi
 
             BRANCH=${GITHUB_REF_NAME:-${GITHUB_HEAD_REF}}
-
+ 
             # Use 'main' as a fallback if neither of the above variables are set
             BRANCH=${BRANCH:-main}
+
+            echo "The branch is: $BRANCH"
 
             # Clone repo if it doesn't exist, otherwise pull latest changes
             if [ ! -d "cs673olf25project-cs673olf25_team4" ]; then
