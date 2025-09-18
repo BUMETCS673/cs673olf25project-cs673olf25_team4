@@ -11,7 +11,7 @@ steps:
         'build',
         '-t',
         '${_REGION}-docker.pkg.dev/${_PROJECT_ID}/beatmap-backend/${_SERVICE}:latest',
-        './backend',
+        './code/backend',
       ]
 
   # Push image
