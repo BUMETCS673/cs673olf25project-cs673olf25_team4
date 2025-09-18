@@ -1,27 +1,24 @@
-name: Deploy Backend to Cloud Run
+name: Deploy to EC2
 
 on:
   push:
-    branches:
-      - main
+    branches: [ main ]
 
 jobs:
-  deploy-backend:
+  deploy:
     runs-on: ubuntu-latest
-
-    permissions:
-      contents: 'read'
-      id-token: 'write'   # Required for Workload Identity Federation
-
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v3
 
-      - name: Set up gcloud
-        uses: google-github-actions/setup-gcloud@v2
-
-      - name: Run Cloud Build for Backend
-        run: |
-          gcloud builds submit \
-            --config=cloudbuild-backend.yaml \
-            --substitutions=_REGION=${{ secrets.BACKEND_REGION }},_SERVICE=${{ secrets.BACKEND_SERVICE }},_PROJECT_ID=${{ secrets.GCP_PROJECT_ID }}
+      - name: Copy files to EC2
+        uses: appleboy/ssh-action@v0.1.7
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ec2-user
+          key: ${{ secrets.EC2_KEY }}
+          script: |
+            cd /home/ec2-user/<YOUR_REPO>
+            git pull origin main
+            docker-compose down
+            docker-compose up -d
