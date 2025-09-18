@@ -1,0 +1,52 @@
+# Cloud Build config to build the frontend container and deploy to Cloud Run
+# Usage notes:
+# - Trigger from repository root so the build context includes `code/frontend`.
+# - You can override substitutions or pass them when invoking gcloud builds submit.
+# Substitutions available:
+#  _SERVICE_NAME (default: "beatmap-frontend")
+#  _REGION (default: "us-central1")
+#  _IMAGE (default will be gcr.io/$PROJECT_ID/${_SERVICE_NAME}:$SHORT_SHA)
+# Example gcloud submit:
+# gcloud builds submit --config=frontend_cloudbuild.yaml --substitutions=_SERVICE_NAME=beatmap-frontend,_REGION=us-central1
+
+substitutions:
+  _SERVICE_NAME: "beatmap-frontend"
+  _REGION: "us-central1"
+
+steps:
+  # 1) Build the Docker image from code/frontend
+  - name: 'gcr.io/cloud-builders/docker'
+    args:
+      - 'build'
+      - '-t'
+      - 'gcr.io/$PROJECT_ID/$_SERVICE_NAME:$SHORT_SHA'
+      - '.'
+    dir: 'code/frontend'
+
+  # 2) Push the image to Container Registry
+  - name: 'gcr.io/cloud-builders/docker'
+    args:
+      - 'push'
+      - 'gcr.io/$PROJECT_ID/$_SERVICE_NAME:$SHORT_SHA'
+
+  # 3) Deploy to Cloud Run (managed)
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    entrypoint: 'bash'
+    args:
+      - '-c'
+      - |
+        set -euo pipefail
+        IMAGE="gcr.io/$PROJECT_ID/$_SERVICE_NAME:$SHORT_SHA"
+        echo "Deploying $IMAGE to Cloud Run (service=$_SERVICE_NAME, region=$_REGION)"
+        gcloud run deploy "$_SERVICE_NAME" \
+          --image "$IMAGE" \
+          --region "$_REGION" \
+          --platform managed \
+          --allow-unauthenticated \
+          --port 80
+
+images:
+  - 'gcr.io/$PROJECT_ID/$_SERVICE_NAME:$SHORT_SHA'
+
+# Optional: set timeout (default 10m). Uncomment and adjust if your build takes longer.
+# timeout: 1200s
