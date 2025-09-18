@@ -1,15 +1,11 @@
 services:
   backend:
     build:
-      context: .
-      dockerfile: backend/Dockerfile
-      args:
-        CODE_ROOT: .
+      context: ./backend
+      dockerfile: Dockerfile
     container_name: concert_backend
     ports:
       - "8000:8000"
-    volumes:
-      - ./frontend/public:/app/frontend_public:ro
     depends_on:
       - ticketmaster_provider
       - pollstar_provider
@@ -32,3 +28,13 @@ services:
     container_name: pollstar_provider
     ports:
       - "8002:8002"
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: beatmap_frontend
+    ports:
+      - "3000:80"
+    depends_on:
+      - backend
