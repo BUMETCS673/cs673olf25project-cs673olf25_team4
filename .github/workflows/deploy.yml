@@ -16,11 +16,14 @@ jobs:
 
       - name: Deploy via SSH using deploy key
         uses: appleboy/ssh-action@v0.1.7
+        env:
+          BRANCH: ${{ github.ref_name || github.head_ref || 'main' }}
         with:
           host: ${{ secrets.EC2_HOST }}
           username: ec2-user
           key: ${{ secrets.EC2_DEPLOY_KEY }}
           script: |
+            echo "The branch is: $BRANCH"
             # Ensure Git is installed
             if ! command -v git &> /dev/null
             then
@@ -36,16 +39,6 @@ jobs:
               echo "Stopping existing containers..."
               sudo docker-compose -f cs673olf25project-cs673olf25_team4/code/docker-compose.yml down
             fi
-
-            # Determine branch
-            BRANCH=${GITHUB_REF_NAME}
-            if [ -z "$BRANCH" ]; then
-              BRANCH=$GITHUB_HEAD_REF
-            fi
-            BRANCH=${BRANCH:-main}
-            echo "Deploying branch: $BRANCH"
-
-            echo "The branch is: $BRANCH"
 
             if [ ! -d "cs673olf25project-cs673olf25_team4" ]; then
               git clone --branch "$BRANCH" git@github.com:BUMETCS673/cs673olf25project-cs673olf25_team4.git
