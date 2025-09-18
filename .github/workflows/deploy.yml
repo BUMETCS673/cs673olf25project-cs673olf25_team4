@@ -2,7 +2,6 @@ name: Deploy to EC2
 
 on:
   push:
-    branches: [ main ]
 
 jobs:
   deploy:
@@ -18,7 +17,7 @@ jobs:
           username: ec2-user
           key: ${{ secrets.EC2_KEY }}
           script: |
-            cd /home/ec2-user/<YOUR_REPO>
+            cd /home/ec2-user/beatmap
             git pull origin main
             docker-compose down
             docker-compose up -d
