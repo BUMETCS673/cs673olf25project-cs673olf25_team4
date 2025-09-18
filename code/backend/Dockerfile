@@ -9,7 +9,7 @@ WORKDIR /app
 
 # Install system deps (for pip, uvicorn, etc.)
 RUN apk add --no-cache gcc musl-dev libffi-dev
-ARG CODE_ROOT=.
+ARG CODE_ROOT=./code
 COPY ${CODE_ROOT}/backend/requirements.txt ./requirements.txt
 RUN pip install --no-cache-dir -r requirements.txt
 
