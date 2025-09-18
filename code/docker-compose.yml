@@ -3,6 +3,8 @@ services:
     build:
       context: .
       dockerfile: backend/Dockerfile
+      args:
+        CODE_ROOT: .
     container_name: concert_backend
     ports:
       - "8000:8000"
