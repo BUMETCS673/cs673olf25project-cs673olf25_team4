@@ -33,7 +33,7 @@ steps:
         '--region', '${_REGION}',
         '--platform', 'managed',
         '--allow-unauthenticated',
-        '--port', '8080' # update if your frontend uses a different port
+        '--port', '80'
       ]
 
 images:
