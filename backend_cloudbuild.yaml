@@ -10,7 +10,7 @@ steps:
       [
         'build',
         '-t',
-        '${_REGION}-docker.pkg.dev/${_PROJECT_ID}/REPO_NAME/${_SERVICE}:latest',
+        '${_REGION}-docker.pkg.dev/${_PROJECT_ID}/beatmap-backend/${_SERVICE}:latest',
         './backend',
       ]
 
@@ -19,7 +19,7 @@ steps:
     args:
       [
         'push',
-        '${_REGION}-docker.pkg.dev/${_PROJECT_ID}/REPO_NAME/${_SERVICE}:latest',
+        '${_REGION}-docker.pkg.dev/${_PROJECT_ID}/beatmap-backend/${_SERVICE}:latest',
       ]
 
   # Deploy to Cloud Run
@@ -28,7 +28,7 @@ steps:
     args:
       [
         'run', 'deploy', '${_SERVICE}',
-        '--image', '${_REGION}-docker.pkg.dev/${_PROJECT_ID}/REPO_NAME/${_SERVICE}:latest',
+        '--image', '${_REGION}-docker.pkg.dev/${_PROJECT_ID}/beatmap-backend/${_SERVICE}:latest',
         '--region', '${_REGION}',
         '--platform', 'managed',
         '--allow-unauthenticated',
