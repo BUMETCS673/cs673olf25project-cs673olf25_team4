@@ -10,8 +10,9 @@
 # gcloud builds submit --config=frontend_cloudbuild.yaml --substitutions=_SERVICE_NAME=beatmap-frontend,_REGION=us-central1
 
 substitutions:
-  _SERVICE_NAME: "beatmap-frontend"
-  _REGION: "us-central1"
+  _REGION: '${_REGION}'
+  _SERVICE: '${_SERVICE}'
+  _PROJECT_ID: '${_PROJECT_ID}'
 
 steps:
   # 1) Build the Docker image from code/frontend
@@ -48,5 +49,5 @@ steps:
 images:
   - 'gcr.io/$PROJECT_ID/$_SERVICE_NAME:$SHORT_SHA'
 
-# Optional: set timeout (default 10m). Uncomment and adjust if your build takes longer.
-# timeout: 1200s
+options:
+  logging: CLOUD_LOGGING_ONLY
