@@ -7,17 +7,36 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout code
+      - name: Checkout repository
         uses: actions/checkout@v3
 
-      - name: Copy files to EC2
+      - name: Deploy via SSH using deploy key
         uses: appleboy/ssh-action@v0.1.7
         with:
           host: ${{ secrets.EC2_HOST }}
           username: ec2-user
-          key: ${{ secrets.EC2_KEY }}
+          key: ${{ secrets.EC2_DEPLOY_KEY }}
           script: |
-            cd /home/ec2-user/beatmap
-            git pull origin main
+            # Ensure Git is installed
+            if ! command -v git &> /dev/null
+            then
+              sudo yum update -y
+              sudo yum install -y git
+            fi
+
+            # Go to EC2 home directory
+            cd /home/ec2-user
+
+            # Clone repo if it doesn't exist, otherwise pull latest changes
+            if [ ! -d "cs673olf25project-cs673olf25_team4" ]; then
+              git clone git@github.com:BUMETCS673/cs673olf25project-cs673olf25_team4.git
+            else
+              cd cs673olf25project-cs673olf25_team4
+              git pull origin main
+              cd ..
+            fi
+
+            # Go into repo and redeploy containers
+            cd cs673olf25project-cs673olf25_team4
             docker-compose down
             docker-compose up -d
