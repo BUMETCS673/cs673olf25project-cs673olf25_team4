@@ -14,10 +14,9 @@ _repo_static = os.path.abspath(
 )
 
 STATIC_DIR = (
-    _container_static
-    if os.path.isdir(_container_static)
-    else _repo_static
-)
+    _container_static if os.path.isdir(_container_static) else _repo_static
+)  # noqa: E501
+
 
 if os.path.isdir(STATIC_DIR):
     # Mount static files under /static (assets can be served from here)
