@@ -34,3 +34,6 @@ steps:
         '--allow-unauthenticated',
         '--port', '8000',
       ]
+
+options:
+  logging: CLOUD_LOGGING_ONLY
