@@ -34,7 +34,10 @@ jobs:
               sudo docker-compose -f cs673olf25project-cs673olf25_team4/code/docker-compose.yml down
             fi
 
-            BRANCH="${GITHUB_EVENT_WORKFLOW_RUN_HEAD_BRANCH:-main}"
+            BRANCH=${GITHUB_REF_NAME:-${GITHUB_HEAD_REF}}
+
+            # Use 'main' as a fallback if neither of the above variables are set
+            BRANCH=${BRANCH:-main}
 
             # Clone repo if it doesn't exist, otherwise pull latest changes
             if [ ! -d "cs673olf25project-cs673olf25_team4" ]; then
