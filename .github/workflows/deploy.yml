@@ -37,6 +37,6 @@ jobs:
             fi
 
             # Go into repo and redeploy containers
-            cd cs673olf25project-cs673olf25_team4
+            cd cs673olf25project-cs673olf25_team4/code || exit 1
             docker-compose down
             docker-compose up -d
