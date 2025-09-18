@@ -10,6 +10,9 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v3
+        with:
+          fetch-depth: 0  # Fetch all history for all branches and tags
+          ref: ${{ github.ref_name || github.head_ref || 'main' }}  # Checkout the branch that triggered the workflow
 
       - name: Deploy via SSH using deploy key
         uses: appleboy/ssh-action@v0.1.7
@@ -34,16 +37,18 @@ jobs:
               sudo docker-compose -f cs673olf25project-cs673olf25_team4/code/docker-compose.yml down
             fi
 
-            BRANCH=${GITHUB_REF_NAME:-${GITHUB_HEAD_REF}}
- 
-            # Use 'main' as a fallback if neither of the above variables are set
+            # Determine branch
+            BRANCH=${GITHUB_REF_NAME}
+            if [ -z "$BRANCH" ]; then
+              BRANCH=$GITHUB_HEAD_REF
+            fi
             BRANCH=${BRANCH:-main}
+            echo "Deploying branch: $BRANCH"
 
             echo "The branch is: $BRANCH"
 
-            # Clone repo if it doesn't exist, otherwise pull latest changes
             if [ ! -d "cs673olf25project-cs673olf25_team4" ]; then
-              git clone --branch "$BRANCH"  git@github.com:BUMETCS673/cs673olf25project-cs673olf25_team4.git
+              git clone --branch "$BRANCH" git@github.com:BUMETCS673/cs673olf25project-cs673olf25_team4.git
             else
               cd cs673olf25project-cs673olf25_team4
               git fetch origin
@@ -51,6 +56,7 @@ jobs:
               git pull origin "$BRANCH"
               cd ..
             fi
+
 
             # Go into repo and redeploy containers
             cd cs673olf25project-cs673olf25_team4/code || exit 1
