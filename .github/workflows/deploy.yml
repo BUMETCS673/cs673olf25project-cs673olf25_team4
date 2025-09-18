@@ -35,12 +35,16 @@ jobs:
               sudo docker-compose -f cs673olf25project-cs673olf25_team4/code/docker-compose.yml down
             fi
 
+            BRANCH="${GITHUB_EVENT_WORKFLOW_RUN_HEAD_BRANCH:-main}"
+
             # Clone repo if it doesn't exist, otherwise pull latest changes
             if [ ! -d "cs673olf25project-cs673olf25_team4" ]; then
-              git clone git@github.com:BUMETCS673/cs673olf25project-cs673olf25_team4.git
+              git clone --branch "$BRANCH"  git@github.com:BUMETCS673/cs673olf25project-cs673olf25_team4.git
             else
               cd cs673olf25project-cs673olf25_team4
-              git pull origin main
+              git fetch origin
+              git checkout "$BRANCH"
+              git pull origin "$BRANCH"
               cd ..
             fi
 
