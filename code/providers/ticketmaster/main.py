@@ -169,8 +169,10 @@ async def search_events(
     items = [
         _parse_event(e)
         for e in (
-            raw.get("_embedded", {}).get("events") or []
-            )
+            raw.get("_embedded", {})
+            .get("events")
+            or []
+        )
     ]
 
     next_link = (

@@ -17,9 +17,8 @@ async def list_concerts(
     keyword: Optional[str] = Query(
         None,
         description=(
-            "Preferred: search keyword " 
-            "(aligned with "
-            "Ticketmaster)"
+            "Preferred: search keyword \n " 
+            "(aligned with Ticketmaster)"
         ),
     ),
     city: Optional[str] = None,
