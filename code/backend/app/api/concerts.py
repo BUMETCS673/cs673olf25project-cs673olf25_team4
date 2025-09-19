@@ -18,7 +18,8 @@ async def list_concerts(
         None,
         description=(
             "Preferred: search keyword " 
-            "(aligned with Ticketmaster)"
+            "(aligned with "
+            "Ticketmaster)"
         ),
     ),
     city: Optional[str] = None,
@@ -27,7 +28,8 @@ async def list_concerts(
     endDateTime: Optional[str] = None,
     latlong: Optional[str] = Query(
         None,
-        description=("Latitude,Longitude " "(e.g. '40.726,-74.002')"),
+        description=("Latitude,Longitude " 
+                     "(e.g. '40.726,-74.002')"),
     ),
     radius: Optional[str] = None,
     unit: Optional[str] = None,
