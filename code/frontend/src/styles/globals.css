@@ -78,7 +78,7 @@
 
       label {
         display: block;
-        font-size: 12px;
+        font-size: 16px;
         color: var(--muted);
         margin-bottom: 6px;
       }
@@ -100,6 +100,7 @@
       }
 
       .form-row {
+        font-size: 20px;
         display: flex;
         gap: 10px;
         margin-top: 12px;
@@ -170,9 +171,34 @@
         font-size: 14px;
         text-align: center;
       }
+      .banner {
+        position: sticky;
+        display: flex;
+        justify-content: center;
+        text-align: center;
+        margin-bottom: 20px;
+      }
+
+      .banner-img {
+        max-width: 70%;
+        height: auto;
+      }
+
+      .tagline {
+        text-align: center;
+        font-size: large;
+        padding-top: 30px;
+      }
+
+      .form-section {
+        padding: 30px;;
+      }
+
       @media (max-width: 880px) {
         .container {
           grid-template-columns: 1fr;
           padding: 18px;
         }
       }
+
+

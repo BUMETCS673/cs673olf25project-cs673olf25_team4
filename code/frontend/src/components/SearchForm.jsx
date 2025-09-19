@@ -1,6 +1,23 @@
+import { useNavigate } from 'react-router-dom';
+
+// SearchForm: collects user input (keyword, city, date, radius, vendor)
+// On submit, it builds a query string and navigates to /results
+// These params are later read in ResultsPanel to filter concerts
 function SearchForm() {
+  const navigate = useNavigate();
+
+const handleSubmit = (e) => {
+  e.preventDefault();
+
+  const formData = new FormData(e.target);
+  const params = new URLSearchParams(formData);
+
+
+  navigate(`/results?${params.toString()}`);
+};
+
   return (
-    <form id="search-form">
+    <form onSubmit={handleSubmit}>
       <div className="form-row" style={{ flexDirection: 'column' }}>
         <label htmlFor="q">Keyword (artist, venue — optional)</label>
         <input id="q" name="q" type="text" placeholder="e.g. Radiohead" />
@@ -36,9 +53,11 @@ function SearchForm() {
           </select>
         </div>
       </div>
+
       <button className="btn" type="submit">Search concerts</button>
     </form>
   );
 }
 
 export default SearchForm;
+
