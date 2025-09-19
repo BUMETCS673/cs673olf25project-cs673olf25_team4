@@ -1,4 +1,3 @@
-# code/backend/app/api/concerts.py
 from typing import Optional
 from fastapi import APIRouter, HTTPException, Query
 import httpx
@@ -13,13 +12,17 @@ router = APIRouter(tags=["concerts"])
 async def list_concerts(
     q: Optional[str] = Query(
         None,
-        description="Legacy alias for keyword "
-        "(backward compatibility)"
+        description=(
+            "Legacy alias for keyword "
+            "(backward compatibility)"
+        ),
     ),
     keyword: Optional[str] = Query(
         None,
-        description="Preferred: search keyword "
-        "(aligned with Ticketmaster)"
+        description=(
+            "Preferred: search keyword "
+            "(aligned with Ticketmaster)"
+        ),
     ),
     city: Optional[str] = None,
     countryCode: Optional[str] = "US",
@@ -27,7 +30,10 @@ async def list_concerts(
     endDateTime: Optional[str] = None,
     latlong: Optional[str] = Query(
         None,
-        description="Latitude,Longitude (e.g. '40.726,-74.002')"
+        description=(
+            "Latitude,Longitude "
+            "(e.g. '40.726,-74.002')"
+        ),
     ),
     radius: Optional[str] = None,
     unit: Optional[str] = None,
