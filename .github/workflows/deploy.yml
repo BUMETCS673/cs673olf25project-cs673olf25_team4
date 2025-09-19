@@ -4,9 +4,6 @@ on:
   push:
     branches:
       - main   # Only trigger on pushes to main
-  pull_request:
-    branches:
-      - main   # Only trigger PRs targeting main
 
 jobs:
   deploy:
