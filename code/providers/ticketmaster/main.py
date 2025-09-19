@@ -166,14 +166,8 @@ async def search_events(
     raw = await _tm_get("/events.json", locals())
     page_info = raw.get("page", {})
 
-    items = [
-        _parse_event(e)
-        for e in (
-            raw.get("_embedded", {})
-            .get("events")
-            or []
-        )
-    ]
+    items = [_parse_event(e) for e in (raw.get("_embedded", {}).get("events") or [])]  # noqa: E501
+
 
     next_link = (
         (raw.get("_links", {}) or {})
