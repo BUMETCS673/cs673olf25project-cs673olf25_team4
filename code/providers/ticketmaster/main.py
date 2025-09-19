@@ -9,12 +9,16 @@ from dotenv import load_dotenv
 # Load .env file from the project root directory
 load_dotenv(
     dotenv_path=os.path.join(
-        os.path.dirname(__file__), "..", "..", ".env"
+        os.path.dirname(__file__),
+        "..",
+        "..",
+        ".env",
     )
 )
 
 TM_BASE = os.getenv(
-    "TM_BASE_URL", "https://app.ticketmaster.com/discovery/v2"
+    "TM_BASE_URL",
+    "https://app.ticketmaster.com/discovery/v2",
 )
 TM_KEY = os.getenv("TM_API_KEY")
 
@@ -104,7 +108,7 @@ def _parse_event(e: dict) -> EventItem:
         PriceRange(
             currency=p.get("currency"),
             min=p.get("min"),
-            max=p.get("max")
+            max=p.get("max"),
         )
         for p in (e.get("priceRanges") or [])
     ] or None
@@ -147,7 +151,8 @@ async def search_events(
     startDateTime: Optional[str] = None,
     endDateTime: Optional[str] = None,
     latlong: Optional[str] = Query(
-        None, description="e.g. '40.726,-74.002'"
+        None,
+        description="e.g. '40.726,-74.002'",
     ),
     radius: Optional[str] = None,
     unit: Optional[str] = None,
