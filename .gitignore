@@ -72,3 +72,6 @@ venv.bak/
 
 # macOS
 .DS_Store
+
+# files with secrets
+.env
