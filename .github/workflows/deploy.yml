@@ -1,9 +1,10 @@
 name: Deploy to EC2
 
 on:
-  push:
-    branches:
-      - main   # Only trigger on pushes to main
+  workflow_run:
+    workflows: ["Build"]
+    types:
+      - completed
 
 jobs:
   deploy:
