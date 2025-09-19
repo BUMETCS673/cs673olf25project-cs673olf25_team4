@@ -1,42 +1,35 @@
-import SearchForm from '../components/Searchform';
+import Banner from '../components/Banner';
+import SearchForm from '../components/SearchForm';
 import NLForm from '../components/NLForm';
-import Results from '../components/Results';
 
+// SearchPage: main landing page
+// Renders banner, tagline, and both search forms (structured + natural language)
 function SearchPage() {
   return (
-    <main className="container">
-      {/* Left: search */}
-      <section className="panel">
-        <div className="brand">
-          <div className="logo">BM</div>
-          <div>
-            <h1>beatmap</h1>
-            <p className="lead">
-              Find concerts with structured search or natural language.
-            </p>
-          </div>
-        </div>
+    <div className="page">
+      {/* Banner at top */}
+      <Banner />
 
+      {/* Tagline under banner */}
+      <p className="tagline">
+        Find concerts with structured search or ask our AI agent
+      </p>
+
+      {/* Forms stacked vertically */}
+      <section className="form-section">
+        <h2>Search by Details</h2>
         <SearchForm />
-        <hr
-          style={{
-            margin: '20px 0',
-            border: 0,
-            borderTop: '1px solid rgba(255,255,255,0.06)',
-          }}
-        />
+      </section>
+
+      <section className="form-section">
+        <h2>Ask AI</h2>
         <NLForm />
       </section>
-
-      {/* Right: results */}
-      <section className="results">
-        <strong>Results</strong>
-        <div className="status" id="results-status">No search yet</div>
-        <Results items={[]} />
-      </section>
-    </main>
+    </div>
   );
 }
 
 export default SearchPage;
+
+
 

@@ -1,3 +1,5 @@
+// ResultCard: displays a single concert result (title, date, venue, city)
+// Used inside Results to format each item in the list
 function ResultCard({ title, date, venue, city }) {
   return (
     <div className="card">
