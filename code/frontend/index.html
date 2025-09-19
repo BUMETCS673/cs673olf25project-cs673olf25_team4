@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>beatmap</title>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&display=swap"
+      rel="stylesheet"
+    />
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.jsx"></script>
+      <script>
+        // Normalize some incoming URLs before the app mounts so the client-side
+        // router sees the intended path. This handles two common cases:
+        //  - someone opened /index.html directly → rewrite to /
+        //  - someone opened the base URL / → redirect to /search (app default)
+        (function () {
+          try {
+            // Redirect the root path to /search so the SPA shows the search page
+            if (location.pathname === '/' || location.pathname === '') {
+              // Use replaceState to avoid adding an extra history entry
+              history.replaceState(null, '', '/search');
+            }
+          } catch (e) {
+            console.warn('path normalization failed', e);
+          }
+        })();
+      </script>
+  </body>
+</html>
