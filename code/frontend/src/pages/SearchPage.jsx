@@ -1,5 +1,5 @@
 import Banner from '../components/Banner';
-import SearchForm from '../components/SearchForm';
+import SearchForm from '../components/SearchForm.jsx';
 import NLForm from '../components/NLForm';
 
 // SearchPage: main landing page
