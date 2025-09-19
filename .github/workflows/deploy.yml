@@ -43,16 +43,14 @@ jobs:
               sudo docker-compose -f cs673olf25project-cs673olf25_team4/code/docker-compose.yml down
             fi
 
-            # Clone or update repo from main
-            if [ ! -d "cs673olf25project-cs673olf25_team4" ]; then
-              git clone --branch main git@github.com:BUMETCS673/cs673olf25project-cs673olf25_team4.git
-            else
-              cd cs673olf25project-cs673olf25_team4
-              git fetch origin main:main
-              git checkout main
-              git pull origin main
-              cd ..
+            if [ -d "cs673olf25project-cs673olf25_team4" ]; then
+              echo "Removing old repository..."
+              rm -rf cs673olf25project-cs673olf25_team4
             fi
+
+            # Clone or update repo from main
+            git clone --branch main git@github.com:BUMETCS673/cs673olf25project-cs673olf25_team4.git
+
 
             # Go into repo and redeploy containers
             cd cs673olf25project-cs673olf25_team4/code || exit 1
