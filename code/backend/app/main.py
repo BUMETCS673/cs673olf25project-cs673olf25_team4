@@ -6,7 +6,7 @@ from .api.concerts import router as concerts_router
 
 app = FastAPI(title="beatmap-backend")
 
-# router version
+# Register routers
 app.include_router(concerts_router, prefix="/api/v1")
 
 @app.get("/healthz")
@@ -23,8 +23,6 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
-app.include_router(concerts_router, prefix="/api/v1")
 
 @app.get("/")
 async def root():
