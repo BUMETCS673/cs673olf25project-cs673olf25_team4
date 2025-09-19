@@ -15,7 +15,7 @@ async def list_concerts(
         description=("Legacy alias for keyword "),
     ),
     keyword: Optional[str] = Query(
-        None,
+        None, # noqa: E501
         description=("Preferred: search keyword (aligned with Ticketmaster)"))# noqa: E501
         ,
     city: Optional[str] = None,
