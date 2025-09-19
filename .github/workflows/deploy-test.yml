@@ -37,7 +37,7 @@ jobs:
             # Remove existing containers if they are running
             if [ "$(docker ps -q)" ]; then
               echo "Stopping existing containers..."
-              sudo docker-compose -f cs673olf25project-cs673olf25_team4/code/docker-compose.yml down
+              sudo docker-compose -f cs673olf25project-cs673olf25_team4/src/docker-compose.yml down
             fi
 
             # Clone or update repo from test
@@ -52,6 +52,6 @@ jobs:
             fi
 
             # Go into repo and redeploy containers
-            cd cs673olf25project-cs673olf25_team4/code || exit 1
+            cd cs673olf25project-cs673olf25_team4/src || exit 1
             sudo docker-compose down
             sudo docker-compose up -d

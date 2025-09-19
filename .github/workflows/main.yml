@@ -11,7 +11,7 @@ jobs:
       image: python:3.11-alpine3.21
     defaults:
       run:
-        working-directory: code/backend
+        working-directory: src/backend
 
     steps:
     - name: Checkout code
