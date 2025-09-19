@@ -22,16 +22,15 @@ jobs:
         apk add --no-cache build-base
         python -m pip install --upgrade pip
         pip install -r requirements.txt
-
         pip install flake8 pytest black
 
     - name: Auto-format with black
       run: |
         black ../backend ../providers --line-length 88
 
-
     - name: Run linter
-      run: flake8 ../backend ../providers
+      run: |
+        flake8 --max-line-length 88 ../backend ../providers
 
     - name: Run tests
       run: pytest tests --maxfail=1 --disable-warnings -q
