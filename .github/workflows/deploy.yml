@@ -46,7 +46,7 @@ jobs:
             echo "Checking for running containers..."
             if [ "$(docker ps -q)" ]; then
               echo "Stopping existing containers..."
-              sudo docker-compose -f cs673olf25project-cs673olf25_team4/code/docker-compose.yml down
+              sudo docker-compose -f cs673olf25project-cs673olf25_team4/src/docker-compose.yml down
               echo "Containers stopped."
             else
               echo "No running containers found."
@@ -67,8 +67,8 @@ jobs:
             git clone --branch main git@github.com:BUMETCS673/cs673olf25project-cs673olf25_team4.git
             echo "Repository cloned."
 
-            echo "Moving into project code directory..."
-            cd cs673olf25project-cs673olf25_team4/code || exit 1
+            echo "Moving into project src directory..."
+            cd cs673olf25project-cs673olf25_team4/src || exit 1
 
             echo "Rebuilding Docker containers from scratch..."
             sudo docker-compose build --no-cache
