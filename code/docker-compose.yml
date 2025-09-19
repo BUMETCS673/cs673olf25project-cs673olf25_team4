@@ -8,10 +8,10 @@ services:
       - "8000:8000"
     depends_on:
       - ticketmaster_provider
-      - pollstar_provider
+      - jambase_provider
     environment:
       TICKETMASTER_API_URL: http://ticketmaster_provider:8001
-      POLLSTAR_API_URL: http://pollstar_provider:8002
+      JAMBASE_API_URL: http://jambase_provider:8002
 
   ticketmaster_provider:
     build:
@@ -21,10 +21,20 @@ services:
     ports:
       - "8001:8001"
 
-  pollstar_provider:
+  jambase_provider:
     build:
-      context: ./providers/pollstar
+      context: ./providers/jambase
       dockerfile: Dockerfile
-    container_name: pollstar_provider
+    container_name: jambase_provider
     ports:
       - "8002:8002"
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: beatmap_frontend
+    ports:
+      - "3000:80"
+    depends_on:
+      - backend
