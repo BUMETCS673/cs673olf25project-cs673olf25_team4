@@ -16,11 +16,8 @@ async def list_concerts(
     ),
     keyword: Optional[str] = Query(
         None,
-        description=(
-            "Preferred: search keyword \n "
-            "(aligned with Ticketmaster)"
-        ),
-    ),
+        description=("Preferred: search keyword (aligned with Ticketmaster)"))# noqa: E501
+        ,
     city: Optional[str] = None,
     countryCode: Optional[str] = "US",
     startDateTime: Optional[str] = None,
