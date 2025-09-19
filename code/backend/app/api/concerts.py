@@ -12,16 +12,12 @@ router = APIRouter(tags=["concerts"])
 async def list_concerts(
     q: Optional[str] = Query(
         None,
-        description=(
-            "Legacy alias for keyword "
-            "(backward compatibility)"
-        ),
+        description=("Legacy alias for keyword "),
     ),
     keyword: Optional[str] = Query(
         None,
         description=(
-            "Preferred: search keyword "
-            "(aligned with Ticketmaster)"
+            "Preferred: search keyword " "(aligned with Ticketmaster)"
         ),
     ),
     city: Optional[str] = None,
@@ -30,10 +26,7 @@ async def list_concerts(
     endDateTime: Optional[str] = None,
     latlong: Optional[str] = Query(
         None,
-        description=(
-            "Latitude,Longitude "
-            "(e.g. '40.726,-74.002')"
-        ),
+        description=("Latitude,Longitude " "(e.g. '40.726,-74.002')"),
     ),
     radius: Optional[str] = None,
     unit: Optional[str] = None,

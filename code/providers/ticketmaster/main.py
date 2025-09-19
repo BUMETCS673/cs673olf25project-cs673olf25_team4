@@ -96,12 +96,16 @@ def _parse_event(e: dict) -> EventItem:
         name=v0.get("name"),
         city=(v0.get("city") or {}).get("name"),
         country=(v0.get("country") or {}).get("countryCode"),
-        lat=float(v0["location"]["latitude"])
-        if v0.get("location", {}).get("latitude")
-        else None,
-        lon=float(v0["location"]["longitude"])
-        if v0.get("location", {}).get("longitude")
-        else None,
+        lat=(
+            float(v0["location"]["latitude"])
+            if v0.get("location", {}).get("latitude")
+            else None
+        ),
+        lon=(
+            float(v0["location"]["longitude"])
+            if v0.get("location", {}).get("longitude")
+            else None
+        ),
     )
 
     prices = [
@@ -163,14 +167,9 @@ async def search_events(
     raw = await _tm_get("/events.json", locals())
     page_info = raw.get("page", {})
     items = [
-        _parse_event(e)
-        for e in (raw.get("_embedded", {}).get("events") or [])
+        _parse_event(e) for e in (raw.get("_embedded", {}).get("events") or [])
     ]
-    next_link = (
-        (raw.get("_links", {}) or {})
-        .get("next", {})
-        .get("href")
-    )
+    next_link = (raw.get("_links", {}) or {}).get("next", {}).get("href")
     return EventSearchResponse(
         totalElements=page_info.get("totalElements", 0),
         page=page_info.get("number", page),
