@@ -9,9 +9,11 @@ app = FastAPI(title="beatmap-backend")
 # Register routers
 app.include_router(concerts_router, prefix="/api/v1")
 
+
 @app.get("/healthz")
 async def healthz():
     return {"ok": True}
+
 
 app.add_middleware(
     CORSMiddleware,
@@ -23,6 +25,7 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
 
 @app.get("/")
 async def root():
