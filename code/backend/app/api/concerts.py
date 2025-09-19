@@ -19,8 +19,8 @@ class Concert:
             "lineup" : self.lineup
         }
 
-def get_concert_objs(city, start_date, end_date):
-    event_data = jambase_get_events(city, start_date, end_date)
+async def get_concert_objs_from_jambase(city, start_date, end_date):
+    event_data = await jambase_get_events(city, start_date, end_date)
     concerts = []
 
     for event in event_data.get("events"):
