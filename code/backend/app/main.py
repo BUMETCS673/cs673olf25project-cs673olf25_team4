@@ -26,6 +26,9 @@ app.add_middleware(
 
 app.include_router(concerts_router, prefix="/api/v1")
 
-@app.get("/healthz")
-async def healthz():
-    return {"ok": True}
+@app.get("/")
+async def root():
+    return {
+        "status": "ok",
+        "message": "Backend is running. Main entry point for beatmap.",
+    }
