@@ -1,4 +1,3 @@
-# providers/ticketmaster/main.py
 import os
 from typing import List, Optional
 import httpx
@@ -166,10 +165,18 @@ async def search_events(
 ):
     raw = await _tm_get("/events.json", locals())
     page_info = raw.get("page", {})
+
     items = [
-        _parse_event(e) for e in (raw.get("_embedded", {}).get("events") or [])
+        _parse_event(e)
+        for e in (raw.get("_embedded", {}).get("events") or [])
     ]
-    next_link = (raw.get("_links", {}) or {}).get("next", {}).get("href")
+
+    next_link = (
+        (raw.get("_links", {}) or {})
+        .get("next", {})
+        .get("href")
+    )
+
     return EventSearchResponse(
         totalElements=page_info.get("totalElements", 0),
         page=page_info.get("number", page),
@@ -185,5 +192,8 @@ async def search_events(
     tags=["events"],
 )
 async def get_event(event_id: str):
-    raw = await _tm_get(f"/events/{event_id}.json", {})
+    raw = await _tm_get(
+        f"/events/{event_id}.json",
+        {},
+    )
     return _parse_event(raw)
