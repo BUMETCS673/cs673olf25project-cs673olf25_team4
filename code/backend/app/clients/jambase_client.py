@@ -6,7 +6,7 @@ load_dotenv()
 jambase_key = os.environ["JAMBASE_API_KEY"]
 headers = {"Accept" : "application/json"}
 
-def search_events(city_str, start_date, end_date):
+def get_events(city_str, start_date, end_date):
     jambase_city_id = get_city_id(city_str)
 
     url = "https://www.jambase.com/jb-api/v1/events"
