@@ -16,6 +16,7 @@ from backend.app.api.concerts import get_concert_objs_from_jambase
 
 app = FastAPI(title="JamBase Provider", version="1.0.0")
 
+
 class ConcertResponse(BaseModel):
     source: str
     parameters: List[str]
@@ -35,7 +36,7 @@ async def search(
     end_date: date = Query(..., description="Search end date (YYYY-MM-DD)"),
 ):
     """
-    Gets Concert objects from concerts.py result after querying the JamBase API.
+    Gets Concert obj from concerts.py result after querying the JamBase API.
     """
     print("Jambase search called with:", city, start_date, end_date)
 

@@ -13,6 +13,7 @@ app = FastAPI()
 JAMBASE_URL = os.getenv("JAMBASE_API_URL", "http://jambase_provider:8002")
 print("Using JAMBASE_URL:", JAMBASE_URL)
 
+
 @app.get("/")
 async def root():
     return {
