@@ -5,6 +5,7 @@ This file defines a common Concert object. It queries concert data from
 JamBase and turns the data into a list of Concert objects so we have a
 standardized way of working with the data.
 """
+
 from ..clients.jambase_client import get_events as jambase_get_events
 
 
@@ -34,12 +35,13 @@ async def get_concert_objs_from_jambase(city, start_date, end_date):
 
      Args:
          city(str): The city to get the event data for.
-         start_date(str): A date in YYYY-MM-DD format to start the date range from.
+         start_date(str): A date in YYYY-MM-DD format to start the date
+         range from.
          end_date(str): A date in YYYY-MM-DD format to end the date range to.
 
     Returns:
         concerts: A list of Concert objects.
-     """
+    """
     event_data = await jambase_get_events(city, start_date, end_date)
     concerts = []
 

@@ -49,7 +49,7 @@ async def test_get_city_id():
 
 def test_jambase_parse_performers():
     """Test that parse_performers returns the correct headlining artist
-        and the list of artists that are performing at the event"""
+    and the list of artists that are performing at the event"""
     test_performer_list = [
         {
             "@type": "MusicGroup",
