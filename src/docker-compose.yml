@@ -12,22 +12,26 @@ services:
     environment:
       TICKETMASTER_API_URL: http://ticketmaster_provider:8001
       JAMBASE_API_URL: http://jambase_provider:8002
+    env_file:
+      - backend/.env
 
   ticketmaster_provider:
     build:
-      context: ./providers/ticketmaster
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: providers/ticketmaster/Dockerfile
     container_name: ticketmaster_provider
     ports:
       - "8001:8001"
 
   jambase_provider:
     build:
-      context: ./providers/jambase
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: providers/jambase/Dockerfile
     container_name: jambase_provider
     ports:
       - "8002:8002"
+    environment:
+      JAMBASE_API_KEY: ${JAMBASE_API_KEY} 
 
   frontend:
     build:

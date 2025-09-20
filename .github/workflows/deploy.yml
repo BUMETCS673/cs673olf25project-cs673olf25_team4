@@ -1,16 +1,21 @@
 name: Deploy to EC2
 
 on:
-  push:
-    branches:
-      - main   # Only trigger on pushes to main
-  pull_request:
-    branches:
-      - main   # Only trigger PRs targeting main
+  workflow_run:
+    workflows: ["Build"]
+    types:
+      - completed
 
 jobs:
   deploy:
+    if: >
+      ${{
+        github.event.workflow_run.conclusion == 'success' &&
+        github.event.workflow_run.head_branch == 'main'
+      }}
     runs-on: ubuntu-latest
+    env:
+      JAMBASE_API_KEY: ${{ secrets.JAMBASE_API_KEY }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v3
@@ -25,34 +30,53 @@ jobs:
           username: ec2-user
           key: ${{ secrets.EC2_DEPLOY_KEY }}
           script: |
-            echo "Deploying main branch"
+            export JAMBASE_API_KEY=${{ secrets.JAMBASE_API_KEY }}
+            echo "Starting deployment of main branch..."
 
-            # Ensure Git is installed
+            echo "Checking if Git is installed..."
             if ! command -v git &> /dev/null
             then
+              echo "Git not found. Installing Git..."
               sudo yum update -y
               sudo yum install -y git
+            else
+              echo "Git already installed."
             fi
 
-            # Go to EC2 home directory
+            echo "Changing to home directory..."
             cd /home/ec2-user
 
-            # Remove existing containers if they are running
+            echo "Checking for running containers..."
             if [ "$(docker ps -q)" ]; then
               echo "Stopping existing containers..."
-              sudo docker-compose -f cs673olf25project-cs673olf25_team4/code/docker-compose.yml down
+              sudo docker-compose -f cs673olf25project-cs673olf25_team4/src/docker-compose.yml down
+              echo "Containers stopped."
+            else
+              echo "No running containers found."
             fi
 
+            echo "Checking for old repository..."
             if [ -d "cs673olf25project-cs673olf25_team4" ]; then
               echo "Removing old repository..."
               rm -rf cs673olf25project-cs673olf25_team4
+              echo "Old repository removed."
+            else
+              echo "No old repository found."
             fi
 
-            # Clone or update repo from main
+            echo "Wait..."
+            sleep 3
+            echo "Cloning fresh copy of repository (branch: main)..."
             git clone --branch main git@github.com:BUMETCS673/cs673olf25project-cs673olf25_team4.git
+            echo "Repository cloned."
 
+            echo "Moving into project src directory..."
+            cd cs673olf25project-cs673olf25_team4/src || exit 1
 
-            # Go into repo and redeploy containers
-            cd cs673olf25project-cs673olf25_team4/code || exit 1
-            sudo docker-compose down
+            echo "Rebuilding Docker containers from scratch..."
+            sudo docker-compose build --no-cache
+            echo "Docker images built."
+
+            echo "Starting Docker containers..."
             sudo docker-compose up -d
+            echo "Deployment complete."
