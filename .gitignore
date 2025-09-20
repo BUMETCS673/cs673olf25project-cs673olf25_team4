@@ -75,3 +75,6 @@ venv.bak/
 
 # files with secrets
 .env
+
+# PyCharm files
+.idea/
