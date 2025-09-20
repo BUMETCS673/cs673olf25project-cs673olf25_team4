@@ -1,5 +1,4 @@
-# TODO: not really sure if this import is correct, I don't think it's finding "clients"
-from clients.jambase_client import get_events as jambase_get_events
+from ..clients.jambase_client import get_events as jambase_get_events
 class Concert:
     def __init__(self, id, name, venue, date, artist, lineup):
         self.id = id
