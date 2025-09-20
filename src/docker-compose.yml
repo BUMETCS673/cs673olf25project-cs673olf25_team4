@@ -15,8 +15,8 @@ services:
 
   ticketmaster_provider:
     build:
-      context: ./providers/ticketmaster
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: providers/ticketmaster/Dockerfile
     container_name: ticketmaster_provider
     ports:
       - "8001:8001"
