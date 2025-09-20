@@ -1,0 +1,6 @@
+fastapi>=0.115.10  # Updated for Starlette security compatibility
+uvicorn[standard]==0.30.0
+httpx==0.27.0
+python-dotenv>=1.0.0  # For environment variable management
+pytest==7.4.2
+pytest-asyncio
