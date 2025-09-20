@@ -1,17 +1,16 @@
 import sys
 from pathlib import Path
-import os
+import pytest
+from unittest.mock import patch, AsyncMock, Mock
+from fastapi.testclient import TestClient
 
 # Add the backend directory to the Python path
 backend_dir = Path(__file__).parent.parent
 sys.path.insert(0, str(backend_dir))
 
-from fastapi.testclient import TestClient
-from app.main import app
-from app.clients import jambase_client  # Import the module, not a specific object
-from unittest.mock import patch, AsyncMock, Mock
-import pytest
-from app.api import concerts
+from app.main import app  # noqa
+from app.clients import jambase_client  # noqa
+from app.api import concerts  # noqa
 
 client = TestClient(app)
 
@@ -45,7 +44,7 @@ async def test_get_city_id():
     mock_response.raise_for_status = lambda: None
 
     with patch(
-        "backend.app.clients.jambase_client.httpx.AsyncClient.get",
+        "app.clients.jambase_client.httpx.AsyncClient.get",
         new=AsyncMock(return_value=mock_response),
     ) as mock_get:
         city_id = await jambase_client.get_city_id("Boston")

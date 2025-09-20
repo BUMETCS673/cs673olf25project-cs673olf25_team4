@@ -16,6 +16,7 @@ from backend.app.api.concerts import get_concert_objs_from_jambase
 
 app = FastAPI(title="JamBase Provider", version="1.0.0")
 
+
 class ConcertResponse(BaseModel):
     source: str
     parameters: List[str]
@@ -31,19 +32,22 @@ async def root():
 @app.get("/search", response_model=ConcertResponse)
 async def search(
     city: str = Query(..., description="City to search concerts for"),
-    start_date: date = Query(..., description="Search start date (YYYY-MM-DD)"),
-    end_date: date = Query(..., description="Search end date (YYYY-MM-DD)"),
+    start_date: date = Query(..., description="Search start date (YYYY-MM-DD)"),  # noqa
+    end_date: date = Query(..., description="Search end date (YYYY-MM-DD)"),  # noqa
 ):
     """
-    Gets Concert objects from concerts.py result after querying the JamBase API.
+    Gets Concert obj from concerts.py result after querying the JamBase API.
     """
     print("Jambase search called with:", city, start_date, end_date)
 
     try:
-        concerts = await get_concert_objs_from_jambase(city, start_date, end_date)
+        concerts = await get_concert_objs_from_jambase(
+            city, start_date, end_date
+        )  # noqa
     except Exception as e:
         raise HTTPException(
-            status_code=502, detail=f"Failed to fetch data from JamBase: {str(e)}"
+            status_code=502,
+            detail=f"Failed to fetch data from JamBase: {str(e)}",  # noqa
         )
 
     return ConcertResponse(
