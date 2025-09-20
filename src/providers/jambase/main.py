@@ -5,41 +5,48 @@ Acts as the main entry point for JamBase provider.
 Exposes FastAPI endpoints that call code from jambase_client
 """
 
-from fastapi import FastAPI
+from datetime import date
+from typing import List, Dict, Any
+
+from fastapi import FastAPI, HTTPException, Query
+from pydantic import BaseModel
+
 from backend.app.api.concerts import get_concert_objs_from_jambase
 
 
-app = FastAPI()
+app = FastAPI(title="JamBase Provider", version="1.0.0")
+
+class ConcertResponse(BaseModel):
+    source: str
+    parameters: List[str]
+    results: List[Dict[str, Any]]
 
 
 @app.get("/")
 async def root():
+    """Health check endpoint."""
     return {"status": "ok", "message": "Jambase service is running."}
 
 
-@app.get("/jambase/search")
-async def search(city: str, start_date: str, end_date: str):
+@app.get("/jambase/search", response_model=ConcertResponse)
+async def search(
+    city: str = Query(..., description="City to search concerts for"),
+    start_date: date = Query(..., description="Search start date (YYYY-MM-DD)"),
+    end_date: date = Query(..., description="Search end date (YYYY-MM-DD)"),
+):
     """
-    Gets Concert objects from concerts.py result after querying the JamBase
-    API. Supplies city, start_date, end_date provided by the URL.
-
-    Args:
-        city: The city to get the events for, supplied by
-        the URL query parameters.
-        start_date: The start date for the search, supplied by
-        the URL query parameters. Hopefully in YYYY-MM-DD format.
-        end_date: The end date for the search, supplied by the URL query
-        parameters, hopefully in YYY-MM-DD format.
-
-    Returns:
-        JSON object with the source, query parameters received at first, and
-        a list of dictionaries representing the Concert objects we got from
-        concerts.py
+    Gets Concert objects from concerts.py result after querying the JamBase API.
     """
-    concerts = await get_concert_objs_from_jambase(city, start_date, end_date)
-    # return the data as JSON back to the frontend
-    return {
-        "source": "jambase",
-        "parameters": [city, start_date, end_date],
-        "results": [c.to_dict() for c in concerts],
-    }
+
+    try:
+        concerts = await get_concert_objs_from_jambase(city, start_date, end_date)
+    except Exception as e:
+        raise HTTPException(
+            status_code=502, detail=f"Failed to fetch data from JamBase: {str(e)}"
+        )
+
+    return ConcertResponse(
+        source="jambase",
+        parameters=[city, str(start_date), str(end_date)],
+        results=[c.to_dict() for c in concerts],
+    )
