@@ -45,7 +45,8 @@ def jambase_parse_performers(performer_list):
     artist = ""
     lineup = []
     for performer in performer_list:
-        # if that performer is headlining, then this is the main artist for that event
+        # if that performer is headlining, then this is the main artist
+        # for that event
         if performer.get("x-isHeadliner"):
             artist = performer.get("name")
         lineup.append(performer.get("name"))

@@ -20,11 +20,13 @@ async def search(
     provider: str = Query(..., description="Provider to search events from"),
 ):
     if provider.lower() == "jambase":
-        # TODO: not sure how to send a request to jambase microservice from here
-        url = f"http://localhost:8002/jambase/search"
+        # TODO: not sure how to send a request to jambase
+        #  microservice from here
+        url = "http://localhost:8002/jambase/search"
         async with httpx.AsyncClient() as client:
             response = await client.get(
                 url,
-                params={"city": city, "start_date": start_date, "end_date": end_date},
+                params={"city": city, "start_date": start_date,
+                        "end_date": end_date},
             )
         return response.json()
