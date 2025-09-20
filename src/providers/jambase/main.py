@@ -6,7 +6,8 @@ Exposes FastAPI endpoints that call code from jambase_client
 """
 
 from fastapi import FastAPI
-from src.backend.app.api.concerts import get_concert_objs_from_jambase
+from backend.app.api.concerts import get_concert_objs_from_jambase
+
 
 app = FastAPI()
 
