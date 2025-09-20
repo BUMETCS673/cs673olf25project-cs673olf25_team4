@@ -74,9 +74,9 @@ jobs:
             cd cs673olf25project-cs673olf25_team4/src || exit 1
 
             echo "Rebuilding Docker containers from scratch..."
-            sudo docker-compose build --no-cache
+            sudo -E docker-compose build --no-cache
             echo "Docker images built."
 
             echo "Starting Docker containers..."
-            sudo docker-compose up -d
+            sudo -E docker-compose up -d
             echo "Deployment complete."
