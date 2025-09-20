@@ -1,9 +1,9 @@
-name: Build
+name: Build-All
 
 on:
   push:
-    branches:
-      - main   # Only trigger on pushes to test
+    branches-ignore:
+      - main   
 
 jobs:
   lint-and-test:
