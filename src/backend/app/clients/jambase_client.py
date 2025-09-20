@@ -3,7 +3,10 @@ import os
 from dotenv import load_dotenv
 
 load_dotenv()
-jambase_key = os.environ["JAMBASE_API_KEY"]
+
+
+def get_api_key():
+    return os.getenv("JAMBASE_API_KEY", "dummy-test-key")
 
 
 async def get_events(city_str, start_date, end_date):
@@ -11,7 +14,7 @@ async def get_events(city_str, start_date, end_date):
 
     url = "https://www.jambase.com/jb-api/v1/events"
     query_string = {
-        "apikey": jambase_key,
+        "apikey": get_api_key(),
         "eventDateFrom": start_date,
         "eventDateTo": end_date,
         "geoCityId": jambase_city_id,
@@ -23,7 +26,7 @@ async def get_events(city_str, start_date, end_date):
 
 async def get_city_id(city_str):
     url = "https://www.jambase.com/jb-api/v1/geographies/cities"
-    query_string = {"apikey": jambase_key, "geoCityName": city_str}
+    query_string = {"apikey": get_api_key(), "geoCityName": city_str}
 
     async with httpx.AsyncClient() as client:
         response = await client.get(url, params=query_string)
