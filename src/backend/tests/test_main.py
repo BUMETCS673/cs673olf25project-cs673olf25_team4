@@ -24,6 +24,8 @@ def test_root_content():
 
 @pytest.mark.asyncio
 async def test_get_city_id():
+    """Test with mock data to avoid calling the real API, that we get
+    a result back from get_city_id and we awaited the response."""
     mock_response = Mock()
     mock_response.json.return_value = {
         "cities": [
@@ -46,6 +48,8 @@ async def test_get_city_id():
 
 
 def test_jambase_parse_performers():
+    """Test that parse_performers returns the correct headlining artist
+    and the list of artists that are performing at the event"""
     test_performer_list = [
         {
             "@type": "MusicGroup",
