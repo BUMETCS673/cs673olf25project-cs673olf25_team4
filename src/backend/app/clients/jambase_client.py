@@ -5,6 +5,7 @@ Directly interacts with Jambase API. Queries the events endpoint based
 on a city and a date range, and the cities endpoint which is required
 to search for events.
 """
+
 import httpx
 import os
 from dotenv import load_dotenv

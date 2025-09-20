@@ -4,6 +4,7 @@ main.py
 Acts as the main entry point for BeatMap. Interacts with the API provider
 based on what the user requested.
 """
+
 import httpx
 from fastapi import FastAPI, Query
 
@@ -23,7 +24,7 @@ async def search(
     city: str = Query(..., description="City to search concerts in."),
     start_date: str = Query(..., description="Start date YYYY-MM-DD"),
     end_date: str = Query(..., description="End date YYYY-MM-DD"),
-    provider: str = Query(..., description="Provider to search events from"),
+    provider: str = Query(..., description="Provider to search"),
 ):
     """
     Search endpoint for BeatMap, calls the associated provider based on what
@@ -50,7 +51,10 @@ async def search(
         async with httpx.AsyncClient() as client:
             response = await client.get(
                 url,
-                params={"city": city, "start_date": start_date, # noqa: E501
-                        "end_date": end_date},
+                params={
+                    "city": city,
+                    "start_date": start_date,  # noqa: E501
+                    "end_date": end_date,
+                },
             )
         return response.json()

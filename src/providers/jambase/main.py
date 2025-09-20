@@ -4,6 +4,7 @@ main.py
 Acts as the main entry point for JamBase provider.
 Exposes FastAPI endpoints that call code from jambase_client
 """
+
 from fastapi import FastAPI
 from src.backend.app.api.concerts import get_concert_objs_from_jambase
 
