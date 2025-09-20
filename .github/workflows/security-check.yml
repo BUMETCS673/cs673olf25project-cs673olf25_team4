@@ -41,7 +41,7 @@ jobs:
           pip install bandit safety pip-audit
 
       - name: Run Bandit (static analysis)
-        run: bandit -r code/backend code/providers
+        run: bandit -c bandit.yaml -r code/backend code/providers
 
       - name: Run pip-audit (dependency scan)
         run: pip-audit
