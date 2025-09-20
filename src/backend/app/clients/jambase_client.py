@@ -27,6 +27,6 @@ async def get_city_id(city_str):
 
     async with httpx.AsyncClient() as client:
         response = await client.get(url, params=query_string)
-        # TODO: how should this be implemented? what if multiple cities are returned? do we want every city that the
-        #  API returns?
+        # TODO: how should this be implemented? what if multiple cities
+        #  are returned? do we want every city that the API returns?
         return response.json().get("cities")[0].get("identifier")
