@@ -26,7 +26,7 @@ async def search(
         async with httpx.AsyncClient() as client:
             response = await client.get(
                 url,
-                params={"city": city, "start_date": start_date,
+                params={"city": city, "start_date": start_date, # noqa: E501
                         "end_date": end_date},
             )
         return response.json()
