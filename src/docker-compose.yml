@@ -12,6 +12,8 @@ services:
     environment:
       TICKETMASTER_API_URL: http://ticketmaster_provider:8001
       JAMBASE_API_URL: http://jambase_provider:8002
+    env_file:
+      - backend/.env
 
   ticketmaster_provider:
     build:
@@ -28,6 +30,8 @@ services:
     container_name: jambase_provider
     ports:
       - "8002:8002"
+    environment:
+      JAMBASE_API_KEY: ${JAMBASE_API_KEY} 
 
   frontend:
     build:
