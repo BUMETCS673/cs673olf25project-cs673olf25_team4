@@ -28,7 +28,7 @@ async def root():
     return {"status": "ok", "message": "Jambase service is running."}
 
 
-@app.get("/jambase/search", response_model=ConcertResponse)
+@app.get("/search", response_model=ConcertResponse)
 async def search(
     city: str = Query(..., description="City to search concerts for"),
     start_date: date = Query(..., description="Search start date (YYYY-MM-DD)"),
@@ -37,6 +37,7 @@ async def search(
     """
     Gets Concert objects from concerts.py result after querying the JamBase API.
     """
+    print("Jambase search called with:", city, start_date, end_date)
 
     try:
         concerts = await get_concert_objs_from_jambase(city, start_date, end_date)

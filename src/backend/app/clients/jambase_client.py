@@ -41,6 +41,7 @@ async def get_events(city_str, start_date, end_date):
     # cities endpoint in JamBase
     # wait for the result from the API but don't block
     jambase_city_id = await get_city_id(city_str)
+    print("jambase_city_id:", jambase_city_id)
 
     url = "https://www.jambase.com/jb-api/v1/events"
 
@@ -51,7 +52,7 @@ async def get_events(city_str, start_date, end_date):
         "eventDateTo": end_date,
         "geoCityId": jambase_city_id,
     }
-    async with httpx.AsyncClient() as client:
+    async with httpx.AsyncClient(timeout=30) as client:
         response = await client.get(url, params=query_string)
         return response.json()
 
@@ -70,7 +71,7 @@ async def get_city_id(city_str):
     url = "https://www.jambase.com/jb-api/v1/geographies/cities"
     query_string = {"apikey": get_api_key(), "geoCityName": city_str}
 
-    async with httpx.AsyncClient() as client:
+    async with httpx.AsyncClient(timeout=30) as client:
         response = await client.get(url, params=query_string)
         # TODO: how should this be implemented? what if multiple cities
         #  are returned? do we want every city that the API returns?

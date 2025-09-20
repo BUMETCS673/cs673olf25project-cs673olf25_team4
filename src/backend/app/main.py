@@ -6,10 +6,12 @@ based on what the user requested.
 """
 
 import httpx
+import os
 from fastapi import FastAPI, Query
 
 app = FastAPI()
-
+JAMBASE_URL = os.getenv("JAMBASE_API_URL", "http://jambase_provider:8002")
+print("Using JAMBASE_URL:", JAMBASE_URL)
 
 @app.get("/")
 async def root():
@@ -47,8 +49,8 @@ async def search(
     if provider.lower() == "jambase":
         # TODO: not sure how to send a request to jambase
         #  microservice from here
-        url = "http://localhost:8002/jambase/search"
-        async with httpx.AsyncClient() as client:
+        url = f"{JAMBASE_URL}/search"
+        async with httpx.AsyncClient(timeout=30) as client:
             response = await client.get(
                 url,
                 params={
