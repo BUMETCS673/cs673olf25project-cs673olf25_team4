@@ -46,17 +46,17 @@ jobs:
       - name: Run pip-audit (dependency scan - backend)
         run: |
           echo "Scanning backend dependencies..."
-          pip-audit --requirement src/backend/requirements.txt --format table
+          pip-audit --requirement src/backend/requirements.txt
 
       - name: Run pip-audit (dependency scan - jambase provider)
         run: |
           echo "Scanning jambase provider dependencies..."
-          pip-audit --requirement src/providers/jambase/requirements.txt --format table
+          pip-audit --requirement src/providers/jambase/requirements.txt
 
       - name: Run pip-audit (dependency scan - ticketmaster provider)
         run: |
           echo "Scanning ticketmaster provider dependencies..."
-          pip-audit --requirement src/providers/ticketmaster/requirements.txt --format table
+          pip-audit --requirement src/providers/ticketmaster/requirements.txt
 
       - name: Install dependencies for Safety check
         run: |
