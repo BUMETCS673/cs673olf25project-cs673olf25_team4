@@ -37,21 +37,18 @@ jobs:
             # Remove existing containers if they are running
             if [ "$(docker ps -q)" ]; then
               echo "Stopping existing containers..."
-              sudo docker-compose -f cs673olf25project-cs673olf25_team4/code/docker-compose.yml down
+              sudo docker-compose -f cs673olf25project-cs673olf25_team4/src/docker-compose.yml down
+            fi
+
+            if [ -d "cs673olf25project-cs673olf25_team4" ]; then
+              echo "Removing old repository..."
+              rm -rf cs673olf25project-cs673olf25_team4
             fi
 
             # Clone or update repo from test
-            if [ ! -d "cs673olf25project-cs673olf25_team4" ]; then
-              git clone --branch test git@github.com:BUMETCS673/cs673olf25project-cs673olf25_team4.git
-            else
-              cd cs673olf25project-cs673olf25_team4
-              git fetch origin test:test
-              git checkout test
-              git pull origin test
-              cd ..
-            fi
+            git clone --branch test git@github.com:BUMETCS673/cs673olf25project-cs673olf25_team4.git
 
             # Go into repo and redeploy containers
-            cd cs673olf25project-cs673olf25_team4/code || exit 1
-            sudo docker-compose down
+            cd cs673olf25project-cs673olf25_team4/src || exit 1
+            sudo docker-compose build --no-cache
             sudo docker-compose up -d
