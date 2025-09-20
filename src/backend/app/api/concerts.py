@@ -1,3 +1,10 @@
+"""
+concerts.py
+
+This file defines a common Concert object. It queries concert data from
+JamBase and turns the data into a list of Concert objects so we have a
+standardized way of working with the data.
+"""
 from ..clients.jambase_client import get_events as jambase_get_events
 
 
@@ -22,6 +29,17 @@ class Concert:
 
 
 async def get_concert_objs_from_jambase(city, start_date, end_date):
+    """
+     Gets the data from JamBase for events in a city in a date range.
+
+     Args:
+         city(str): The city to get the event data for.
+         start_date(str): A date in YYYY-MM-DD format to start the date range from.
+         end_date(str): A date in YYYY-MM-DD format to end the date range to.
+
+    Returns:
+        concerts: A list of Concert objects.
+     """
     event_data = await jambase_get_events(city, start_date, end_date)
     concerts = []
 
@@ -42,6 +60,18 @@ async def get_concert_objs_from_jambase(city, start_date, end_date):
 
 
 def jambase_parse_performers(performer_list):
+    """
+    Gets the headlining artists and list of artists performing at an event
+    from a list of performers provided from JamBase.
+
+    Args:
+        performer_list: A list of dictionaries containing the performer info
+        for an event passed from JamBase.
+
+    Returns:
+        A list of 2 objects, a string containing the headlining artist
+        and a list of artists that are performing at the event
+    """
     artist = ""
     lineup = []
     for performer in performer_list:
