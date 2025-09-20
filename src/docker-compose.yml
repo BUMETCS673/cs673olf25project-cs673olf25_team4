@@ -13,8 +13,6 @@ services:
       TICKETMASTER_API_URL: http://ticketmaster_provider:8001
       JAMBASE_API_URL: http://jambase_provider:8002
       JAMBASE_API_KEY: ${JAMBASE_API_KEY}
-    env_file:
-      - backend/.env
 
   ticketmaster_provider:
     build:
