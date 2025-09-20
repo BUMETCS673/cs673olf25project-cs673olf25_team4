@@ -1,11 +1,17 @@
-from fastapi.testclient import TestClient
-from ..app.main import app
-from ..app.clients import jambase_client
+import sys
+from pathlib import Path
+import os
 
+# Add the backend directory to the Python path
+backend_dir = Path(__file__).parent.parent
+sys.path.insert(0, str(backend_dir))
+
+from fastapi.testclient import TestClient
+from app.main import app
+from app.clients import jambase_client  # Import the module, not a specific object
 from unittest.mock import patch, AsyncMock, Mock
 import pytest
-
-from ..app.api import concerts
+from app.api import concerts
 
 client = TestClient(app)
 
