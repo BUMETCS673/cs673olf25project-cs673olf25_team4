@@ -23,8 +23,8 @@ services:
 
   jambase_provider:
     build:
-      context: ./providers/jambase
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: providers/jambase/Dockerfile
     container_name: jambase_provider
     ports:
       - "8002:8002"
