@@ -7,10 +7,14 @@ WORKDIR /app
 
 RUN apk add --no-cache gcc musl-dev libffi-dev
 
-COPY requirements.txt .
+COPY providers/ticketmaster/requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-COPY . .
+# Copy jambase provider code
+COPY providers/ticketmaster /app
+
+# Copy backend code
+COPY backend /app/backend
 
 # Each provider exposes its own FastAPI app in main.py
-CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["uvicorn", "backend.app.main:app", "--host", "0.0.0.0", "--port", "8000"]
