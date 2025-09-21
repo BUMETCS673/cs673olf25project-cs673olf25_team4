@@ -1,3 +1,3 @@
-fastapi>=0.115.10  # Updated for Starlette security compatibility
+fastapi>=0.115.10
 uvicorn[standard]==0.30.0
 httpx==0.27.0
