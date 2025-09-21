@@ -17,4 +17,4 @@ COPY providers/ticketmaster /app
 COPY backend /app/backend
 
 # Each provider exposes its own FastAPI app in main.py
-CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8001"]
+CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
