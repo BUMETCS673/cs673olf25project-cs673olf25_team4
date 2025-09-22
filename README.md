@@ -48,7 +48,7 @@ This makes it especially useful for:
 - **Backend:** Python + FastAPI (REST API)  
 - **Frontend:** TBD (likely React)  
 - **Database:** Azure SQL Database (SQL Server)  
-- **Deployment:** Docker + GitHub Actions + Google Cloud Run / Azure  
+- **Deployment:** Docker + GitHub Actions + EC2 AWS Virtual Machine
 - **Tools:** Jira, VS Code, AI helpers (ChatGPT, Gemini, Copilot)  
 
 ---
