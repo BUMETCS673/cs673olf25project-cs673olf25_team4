@@ -2,7 +2,8 @@
 """
 concerts.py
 
-- JamBase helpers (kept unchanged): Concert class, get_concert_objs_from_jambase, jambase_parse_performers
+- JamBase helpers (kept unchanged):
+  Concert class, get_concert_objs_from_jambase, jambase_parse_performers
 - Ticketmaster services (new): list_concerts_service, get_concert_service
   (no APIRouter here; routes are defined in app/main.py)
 """
@@ -13,6 +14,7 @@ from fastapi import HTTPException
 
 # ---------------- JamBase (UNTOUCHED) ----------------
 from ..clients.jambase_client import get_events as jambase_get_events
+from ..clients import ticketmaster_client
 
 
 class Concert:
@@ -37,7 +39,7 @@ class Concert:
 
 async def get_concert_objs_from_jambase(city, start_date, end_date):
     """
-     Gets the data from JamBase for events in a city in a date range.
+    Gets the data from JamBase for events in a city in a date range.
     """
     event_data = await jambase_get_events(city, start_date, end_date)
     concerts = []
@@ -69,9 +71,6 @@ def jambase_parse_performers(performer_list):
             artist = performer.get("name")
         lineup.append(performer.get("name"))
     return [artist, lineup]
-
-# ---------------- Ticketmaster (NEW SERVICE FUNCTIONS ONLY) ----------------
-from ..clients import ticketmaster_client
 
 
 async def list_concerts_service(

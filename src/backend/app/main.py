@@ -1,7 +1,5 @@
 # app/main.py
 from typing import Optional
-import os
-from datetime import datetime
 
 from fastapi import FastAPI, Query, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
@@ -27,13 +25,19 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+
 @app.get("/healthz")
 async def healthz():
     return {"ok": True}
 
+
 @app.get("/")
 async def root():
-    return {"status": "ok", "message": "Backend is running. Main entry point for beatmap."}
+    return {
+        "status": "ok",
+        "message": "Backend is running. Main entry point for beatmap.",
+    }
+
 
 # -------- v1 routes (Ticketmaster) --------
 @app.get("/api/v1/concerts", summary="List Concerts", include_in_schema=False)
@@ -71,7 +75,12 @@ async def list_concerts(
     except Exception as e:
         raise HTTPException(status_code=502, detail=f"Upstream error: {e}")
 
-@app.get("/api/v1/concerts/{event_id}", summary="Get Concert Details",include_in_schema=False)
+
+@app.get(
+    "/api/v1/concerts/{event_id}",
+    summary="Get Concert Details",
+    include_in_schema=False,
+)
 async def get_concert(event_id: str):
     try:
         return await get_concert_service(event_id)
@@ -80,18 +89,22 @@ async def get_concert(event_id: str):
     except Exception as e:
         raise HTTPException(status_code=502, detail=f"Upstream error: {e}")
 
+
 # -------- Provider-backed Search Endpoint --------
 
 # Instantiate our client classes.
 jambase_client = JamBaseClient()
 ticketmaster_client = TicketmasterClient()
 
+
 @app.get("/search")
 async def search(
     city: str = Query(..., description="City to search concerts in."),
     start_date: str = Query(..., description="Start date YYYY-MM-DD"),
     end_date: str = Query(..., description="End date YYYY-MM-DD"),
-    provider: str = Query(..., description="Provider to search (jambase, ticketmaster, auto)"),
+    provider: str = Query(
+        ..., description="Provider to search (jambase, ticketmaster, auto)"
+    ),
     keyword: Optional[str] = None,
     radius: Optional[int] = None,
 ):

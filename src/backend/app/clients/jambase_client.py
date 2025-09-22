@@ -33,8 +33,8 @@ class JamBaseClient(ProviderClientInterface):
     async def search_events(self, params: Dict) -> Dict:
         # JamBase expects the keyword parameter as 'q'
         clean = {k: v for k, v in params.items() if v is not None}
-        if 'keyword' in clean:
-            clean['q'] = clean.pop('keyword')
+        if "keyword" in clean:
+            clean["q"] = clean.pop("keyword")
         # JamBase may expect dates in a certain format—assume they are preformatted
         print(f"{JAMBASE_PROVIDER_URL}/search")
         print(clean)
@@ -42,7 +42,6 @@ class JamBaseClient(ProviderClientInterface):
             response = await client.get(f"{JAMBASE_PROVIDER_URL}/search", params=clean)
             response.raise_for_status()
             return response.json()
-        
 
     async def get_event(self, event_id: str) -> Dict:
         async with httpx.AsyncClient(timeout=20.0) as client:

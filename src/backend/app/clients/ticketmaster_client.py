@@ -6,6 +6,7 @@ from .provider_client_interface import ProviderClientInterface
 
 TM_PROVIDER_URL = os.getenv("TM_PROVIDER_URL", "http://ticketmaster_provider:8000")
 
+
 class TicketmasterClient(ProviderClientInterface):
     async def search_events(self, params: Dict) -> Dict:
         # Remove any parameters that are None.
