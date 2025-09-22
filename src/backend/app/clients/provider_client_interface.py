@@ -1,6 +1,7 @@
 from abc import ABC, abstractmethod
 from typing import Dict
 
+
 class ProviderClientInterface(ABC):
     @abstractmethod
     async def search_events(self, params: Dict) -> Dict:
