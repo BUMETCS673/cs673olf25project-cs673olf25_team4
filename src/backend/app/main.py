@@ -1,16 +1,19 @@
 # app/main.py
+import random
+import os
 from typing import Optional
 
+from dotenv import load_dotenv
 from fastapi import FastAPI, Query, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+import httpx
 
-from .api.concerts import (
-    list_concerts_service,
-    get_concert_service,
-)
+load_dotenv()
+JAMBASE_PROVIDER_URL = os.getenv("JAMBASE_PROVIDER_URL", "http://jambase_provider:8000")
+TM_PROVIDER_URL = os.getenv("TM_PROVIDER_URL", "http://ticketmaster_provider:8000")
 
-from app.clients.jambase_client import JamBaseClient
-from app.clients.ticketmaster_client import TicketmasterClient
+concert_data_providers = {"jambase": JAMBASE_PROVIDER_URL, "ticketmaster": TM_PROVIDER_URL}
+
 
 app = FastAPI(title="beatmap-backend")
 
@@ -26,11 +29,6 @@ app.add_middleware(
 )
 
 
-@app.get("/healthz")
-async def healthz():
-    return {"ok": True}
-
-
 @app.get("/")
 async def root():
     return {
@@ -39,74 +37,15 @@ async def root():
     }
 
 
-# -------- v1 routes (Ticketmaster) --------
-@app.get("/api/v1/concerts", summary="List Concerts", include_in_schema=False)
-async def list_concerts(
-    q: Optional[str] = Query(None, description="Legacy alias for keyword"),
-    keyword: Optional[str] = Query(None, description="Preferred search keyword"),
-    city: Optional[str] = None,
-    countryCode: Optional[str] = "US",
-    startDateTime: Optional[str] = None,
-    endDateTime: Optional[str] = None,
-    latlong: Optional[str] = Query(None, description="e.g. '40.726,-74.002'"),
-    radius: Optional[str] = None,
-    unit: Optional[str] = None,
-    page: int = 0,
-    size: int = 20,
-    sort: Optional[str] = None,
-):
-    try:
-        return await list_concerts_service(
-            q=q,
-            keyword=keyword,
-            city=city,
-            countryCode=countryCode,
-            startDateTime=startDateTime,
-            endDateTime=endDateTime,
-            latlong=latlong,
-            radius=radius,
-            unit=unit,
-            page=page,
-            size=size,
-            sort=sort,
-        )
-    except HTTPException:
-        raise
-    except Exception as e:
-        raise HTTPException(status_code=502, detail=f"Upstream error: {e}")
-
-
-@app.get(
-    "/api/v1/concerts/{event_id}",
-    summary="Get Concert Details",
-    include_in_schema=False,
-)
-async def get_concert(event_id: str):
-    try:
-        return await get_concert_service(event_id)
-    except HTTPException:
-        raise
-    except Exception as e:
-        raise HTTPException(status_code=502, detail=f"Upstream error: {e}")
-
-
-# -------- Provider-backed Search Endpoint --------
-
-# Instantiate our client classes.
-jambase_client = JamBaseClient()
-ticketmaster_client = TicketmasterClient()
-
-
 @app.get("/search")
 async def search(
-    city: str = Query(..., description="City to search concerts in."),
-    start_date: str = Query(..., description="Start date YYYY-MM-DD"),
-    end_date: str = Query(..., description="End date YYYY-MM-DD"),
+    city: str = Query(None, description="City to search concerts in."),
+    start_date: str = Query(None, description="Start date YYYY-MM-DD"),
+    end_date: str = Query(None, description="End date YYYY-MM-DD"),
     provider: str = Query(
-        ..., description="Provider to search (jambase, ticketmaster, auto)"
+        None, description="Provider to search (jambase, ticketmaster)"
     ),
     keyword: Optional[str] = None,
-    radius: Optional[int] = None,
 ):
     # Build a parameters dictionary that the client interface expects.
     params = {
@@ -114,27 +53,21 @@ async def search(
         "start_date": start_date,
         "end_date": end_date,
         "keyword": keyword,
-        "radius": radius,
     }
-    prov = provider.lower()
-    if prov == "jambase":
-        try:
-            return await jambase_client.search_events(params)
-        except Exception as e:
-            raise HTTPException(status_code=502, detail=f"JamBase error: {e}")
-    elif prov == "ticketmaster":
-        try:
-            return await ticketmaster_client.search_events(params)
-        except Exception as e:
-            raise HTTPException(status_code=502, detail=f"Ticketmaster error: {e}")
-    elif prov == "auto":
-        try:
-            # Try Ticketmaster first, then JamBase as a fallback.
-            return await ticketmaster_client.search_events(params)
-        except Exception:
-            try:
-                return await jambase_client.search_events(params)
-            except Exception as e:
-                raise HTTPException(status_code=502, detail=f"Auto provider error: {e}")
+    print(params)
+
+    if provider is None:
+        provider = random.choice(["jambase", "ticketmaster"])
     else:
-        raise HTTPException(status_code=400, detail="Unsupported provider")
+        provider = provider.lower()
+
+    try:
+        # Remove any parameters that are None.
+        print(params)
+        clean = {k: v for k, v in params.items() if v is not None}
+        async with httpx.AsyncClient(timeout=20.0) as client:
+            response = await client.get(f"{concert_data_providers[provider]}/search", params=clean)
+            response.raise_for_status()
+            return response.json()
+    except Exception as e:
+        raise HTTPException(status_code=502, detail=f"Error fetching concert data: {e}")
