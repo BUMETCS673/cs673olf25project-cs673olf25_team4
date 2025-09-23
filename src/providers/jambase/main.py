@@ -4,12 +4,14 @@ main.py
 Acts as the main entry point for JamBase provider.
 Exposes FastAPI endpoints that call code from jambase_client.
 
-Most of this code was written by humans. We asked Copilot to help us refactor the /search endpoint
-to match the same response model as the Ticketmaster provider, so that the backend can treat them
+Most of this code was written by humans.
+We asked Copilot to help us refactor the /search endpoint
+to match the same response model as the Ticketmaster provider,
+so that the backend can treat them
 the same way.
 """
 
-from datetime import date, datetime
+from datetime import datetime
 import os
 from typing import List, Dict, Any, Optional
 
@@ -85,7 +87,7 @@ async def get_events(city_str, start_date, end_date, keyword=None):
         "eventDateTo": end_date,
         "geoCityId": jambase_city_id,
         "keyword": keyword,
-        "@type": "concert"
+        "@type": "concert",
     }
     print(query_string)
     async with httpx.AsyncClient(timeout=30) as client:
@@ -109,7 +111,6 @@ async def get_city_id(city_str):
 
     url = "https://www.jambase.com/jb-api/v1/geographies/cities"
     query_string = {"apikey": get_api_key(), "geoCityName": city_str}
-    
 
     async with httpx.AsyncClient(timeout=30) as client:
         response = await client.get(url, params=query_string)
@@ -119,7 +120,8 @@ async def get_city_id(city_str):
         # get the identifier for the first city returned, they are sorted
         # by the amount of events in the city, highest to lowest
         return response.json().get("cities")[0].get("identifier")
-    
+
+
 def get_api_key():
     """
     Returns the API key for JamBase stored in env file. If not found,
@@ -130,7 +132,8 @@ def get_api_key():
         found a dummy key.
     """
     return os.getenv("JAMBASE_API_KEY", "dummy-test-key")
-    
+
+
 async def get_concert_objs_from_jambase(city, start_date, end_date, keyword):
     """
     Gets the data from JamBase for events in a city in a date range.
@@ -153,6 +156,7 @@ async def get_concert_objs_from_jambase(city, start_date, end_date, keyword):
 
     return concerts
 
+
 class Concert:
     def __init__(self, id, name, venue, date, artist, lineup):
         self.id = id
@@ -172,6 +176,7 @@ class Concert:
             "lineup": self.lineup,
         }
 
+
 def jambase_parse_performers(performer_list):
     """
     Extract headliner and lineup from JamBase performer list.
@@ -184,6 +189,7 @@ def jambase_parse_performers(performer_list):
         lineup.append(performer.get("name"))
     return [artist, lineup]
 
+
 @app.get("/")
 async def root():
     """Health check endpoint."""
@@ -193,7 +199,9 @@ async def root():
 @app.get("/search", response_model=EventSearchResponse)
 async def search(
     city: Optional[str] = Query(None, description="City to search concerts for"),
-    start_date: Optional[str] = Query(None, description="Search start date (YYYY-MM-DD)"),
+    start_date: Optional[str] = Query(
+        None, description="Search start date (YYYY-MM-DD)"
+    ),
     end_date: Optional[str] = Query(None, description="Search end date (YYYY-MM-DD)"),
     keyword: Optional[str] = Query(None, description="Search keyword"),
     page: int = 0,
@@ -221,13 +229,21 @@ async def search(
                 id=str(loc.get("identifier") or loc.get("id")) if loc else None,
                 name=loc.get("name"),
                 city=addr.get("addressLocality") or loc.get("city"),
-                country=(addr.get("addressCountry", {}).get("name")
-                         if isinstance(addr.get("addressCountry"), dict) else addr.get("addressCountry"))
-                        or loc.get("country"),
+                country=(
+                    addr.get("addressCountry", {}).get("name")
+                    if isinstance(addr.get("addressCountry"), dict)
+                    else addr.get("addressCountry")
+                )
+                or loc.get("country"),
             )
 
             # startDate / startDateTime / datetime mapping
-            start_dt = ev.get("startDate") or ev.get("startDateTime") or ev.get("datetime") or ev.get("datePublished")
+            start_dt = (
+                ev.get("startDate")
+                or ev.get("startDateTime")
+                or ev.get("datetime")
+                or ev.get("datePublished")
+            )
             if isinstance(start_dt, datetime):
                 start_dt = start_dt.isoformat()
 
@@ -248,12 +264,16 @@ async def search(
             genre_val = ", ".join(genres) if genres else None
 
             prices = [
-                PriceRange(currency=p.get("currency"), min=p.get("min"), max=p.get("max"))
+                PriceRange(
+                    currency=p.get("currency"), min=p.get("min"), max=p.get("max")
+                )
                 for p in (ev.get("priceRanges") or [])
             ] or None
 
             item = EventItem(
-                id=str(ev.get("id") or ev.get("event_id") or ev.get("identifier") or ""),
+                id=str(
+                    ev.get("id") or ev.get("event_id") or ev.get("identifier") or ""
+                ),
                 name=ev.get("name") or ev.get("title"),
                 url=ev.get("url"),
                 startDateTime=start_dt,

@@ -2,7 +2,7 @@ from datetime import datetime, timedelta, timezone
 import os
 from typing import List, Optional
 import httpx
-from fastapi import FastAPI, HTTPException, Query
+from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 from dotenv import load_dotenv
 
@@ -154,7 +154,7 @@ async def search_events(
         "classificationName": "Music",
     }
 
-    if(params["startDateTime"] is not None):
+    if params["startDateTime"] is not None:
         try:
             # Try parsing as full ISO format first
             dt = datetime.fromisoformat(params["startDateTime"])
@@ -168,9 +168,11 @@ async def search_events(
                     dt = datetime.strptime(params["startDateTime"], "%Y-%m-%dT%H:%M")
                 except ValueError:
                     raise HTTPException(400, "Invalid startDateTime format")
-        params["startDateTime"] = dt.replace(tzinfo=timezone(timedelta(hours=-4))).isoformat()
+        params["startDateTime"] = dt.replace(
+            tzinfo=timezone(timedelta(hours=-4))
+        ).isoformat()
 
-    if(params["endDateTime"] is not None):
+    if params["endDateTime"] is not None:
         try:
             # Try parsing as full ISO format first
             dt = datetime.fromisoformat(params["endDateTime"])
@@ -184,7 +186,9 @@ async def search_events(
                     dt = datetime.strptime(params["endDateTime"], "%Y-%m-%dT%H:%M")
                 except ValueError:
                     raise HTTPException(400, "Invalid endDateTime format")
-        params["endDateTime"] = dt.replace(tzinfo=timezone(timedelta(hours=-4))).isoformat()
+        params["endDateTime"] = dt.replace(
+            tzinfo=timezone(timedelta(hours=-4))
+        ).isoformat()
 
     clean_params = {k: v for k, v in params.items() if v is not None}
 

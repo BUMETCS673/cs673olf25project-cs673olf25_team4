@@ -12,7 +12,10 @@ load_dotenv()
 JAMBASE_PROVIDER_URL = os.getenv("JAMBASE_PROVIDER_URL", "http://jambase_provider:8000")
 TM_PROVIDER_URL = os.getenv("TM_PROVIDER_URL", "http://ticketmaster_provider:8000")
 
-concert_data_providers = {"jambase": JAMBASE_PROVIDER_URL, "ticketmaster": TM_PROVIDER_URL}
+concert_data_providers = {
+    "jambase": JAMBASE_PROVIDER_URL,
+    "ticketmaster": TM_PROVIDER_URL,
+}
 
 
 app = FastAPI(title="beatmap-backend")
@@ -66,7 +69,9 @@ async def search(
         print(params)
         clean = {k: v for k, v in params.items() if v is not None}
         async with httpx.AsyncClient(timeout=20.0) as client:
-            response = await client.get(f"{concert_data_providers[provider]}/search", params=clean)
+            response = await client.get(
+                f"{concert_data_providers[provider]}/search", params=clean
+            )
             response.raise_for_status()
             return response.json()
     except Exception as e:
