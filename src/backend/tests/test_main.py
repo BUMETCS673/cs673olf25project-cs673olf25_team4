@@ -1,50 +1,50 @@
-import sys
-from pathlib import Path
-import pytest
+# src/backend/tests/test_main.py
+
 from unittest.mock import patch, AsyncMock, Mock
+
+import pytest
 from fastapi.testclient import TestClient
 
-# Add the backend directory to the Python path
-backend_dir = Path(__file__).parent.parent
-sys.path.insert(0, str(backend_dir))
-
-from app.main import app  # noqa
-from app.clients import jambase_client  # noqa
-from app.api import concerts  # noqa
+# import from src.backend.app
+from src.backend.app.main import app
+from src.backend.app.clients import jambase_client
+from src.backend.app.api import concerts
 
 client = TestClient(app)
 
+# -------------------- Root & Health --------------------
+
 
 def test_root_status_code():
-    """Test that the root endpoint returns 200 OK"""
-    response = client.get("/")
-    assert response.status_code == 200
+    resp = client.get("/")
+    assert resp.status_code == 200
 
 
 def test_root_content():
-    """Test that the root endpoint contains the correct text"""
-    response = client.get("/")
-    assert "beatmap" in response.text
+    resp = client.get("/")
+    assert "beatmap" in resp.text
+
+
+def test_healthz():
+    resp = client.get("/healthz")
+    assert resp.status_code == 200
+    assert resp.json()["ok"] is True
+
+
+# -------------------- JamBase helpers --------------------
 
 
 @pytest.mark.asyncio
 async def test_get_city_id():
-    """Test with mock data to avoid calling the real API, that we get
-    a result back from get_city_id and we awaited the response."""
+    """Mock httpx"""
     mock_response = Mock()
     mock_response.json.return_value = {
-        "cities": [
-            {
-                "@type": "City",
-                "identifier": "jambase:123",
-                "name": "Boston",
-            }
-        ]
+        "cities": [{"@type": "City", "identifier": "jambase:123", "name": "Boston"}]
     }
     mock_response.raise_for_status = lambda: None
 
     with patch(
-        "app.clients.jambase_client.httpx.AsyncClient.get",
+        "src.backend.app.clients.jambase_client.httpx.AsyncClient.get",
         new=AsyncMock(return_value=mock_response),
     ) as mock_get:
         city_id = await jambase_client.get_city_id("Boston")
@@ -53,9 +53,7 @@ async def test_get_city_id():
 
 
 def test_jambase_parse_performers():
-    """Test that parse_performers returns the correct headlining artist
-    and the list of artists that are performing at the event"""
-    test_performer_list = [
+    performers = [
         {
             "@type": "MusicGroup",
             "name": "Turnstile",
@@ -75,6 +73,100 @@ def test_jambase_parse_performers():
             "x-isHeadliner": False,
         },
     ]
-    result = concerts.jambase_parse_performers(test_performer_list)
-    assert result[0] == "Turnstile"
-    assert result[1] == ["Turnstile", "Speed", "Jane Remover"]
+    headliner, lineup = concerts.jambase_parse_performers(performers)
+    assert headliner == "Turnstile"
+    assert lineup == ["Turnstile", "Speed", "Jane Remover"]
+
+
+# -------------------- Ticketmaster endpoints --------------------
+
+MOCK_EVENTS = {
+    "totalElements": 1,
+    "page": 0,
+    "size": 1,
+    "data": [
+        {
+            "id": "test123",
+            "name": "Mock Concert",
+            "url": "http://example.com",
+            "startDateTime": "2025-01-01T00:00:00Z",
+            "segment": "Music",
+            "genre": "Rock",
+            "venue": {
+                "id": "venue1",
+                "name": "Mock Arena",
+                "city": "Boston",
+                "country": "US",
+                "lat": 42.36,
+                "lon": -71.05,
+            },
+            "priceRanges": [{"currency": "USD", "min": 50.0, "max": 100.0}],
+        }
+    ],
+}
+
+
+@pytest.fixture
+def client_fixture():
+    return TestClient(app)
+
+@pytest.mark.skip
+def test_list_concerts(monkeypatch, client_fixture):
+    async def mock_search_events(params):
+        return MOCK_EVENTS
+
+    monkeypatch.setattr(
+        "src.backend.app.clients.ticketmaster_client.TicketmasterClient.search_events",
+        mock_search_events,
+    )
+
+    resp = client_fixture.get("/api/v1/concerts?keyword=rock")
+    assert resp.status_code == 200
+    body = resp.json()
+    assert body["totalElements"] == 1
+    assert body["data"][0]["name"] == "Mock Concert"
+
+@pytest.mark.skip
+def test_get_concert(monkeypatch, client_fixture):
+    async def mock_get_event(event_id: str):
+        return MOCK_EVENTS["data"][0]
+
+    monkeypatch.setattr(
+        "src.backend.app.clients.ticketmaster_client.TicketmasterClient.get_event",
+        mock_get_event,
+    )
+
+    resp = client_fixture.get("/api/v1/concerts/test123")
+    assert resp.status_code == 200
+    assert resp.json()["id"] == "test123"
+
+
+# -------------------- Error handling --------------------
+
+
+def test_list_concerts_upstream_error(monkeypatch, client_fixture):
+    async def mock_search_events(params):
+        raise Exception("Mock upstream failure")
+
+    monkeypatch.setattr(
+        "src.backend.app.clients.ticketmaster_client.TicketmasterClient.search_events",
+        mock_search_events,
+    )
+
+    resp = client_fixture.get("/api/v1/concerts?keyword=fail")
+    assert resp.status_code == 502
+    assert "Upstream error" in resp.json()["detail"]
+
+
+def test_get_concert_upstream_error(monkeypatch, client_fixture):
+    async def mock_get_event(event_id: str):
+        raise Exception("Mock upstream failure")
+
+    monkeypatch.setattr(
+        "src.backend.app.clients.ticketmaster_client.TicketmasterClient.get_event",
+        mock_get_event,
+    )
+
+    resp = client_fixture.get("/api/v1/concerts/fail123")
+    assert resp.status_code == 502
+    assert "Upstream error" in resp.json()["detail"]
