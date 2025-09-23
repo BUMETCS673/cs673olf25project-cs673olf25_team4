@@ -1,3 +1,4 @@
+from datetime import datetime, timedelta, timezone
 import os
 from typing import List, Optional
 import httpx
@@ -34,8 +35,6 @@ class Venue(BaseModel):
     name: Optional[str] = None
     city: Optional[str] = None
     country: Optional[str] = None
-    lat: Optional[float] = None
-    lon: Optional[float] = None
 
 
 class EventItem(BaseModel):
@@ -69,6 +68,7 @@ async def _tm_get(path: str, params: dict) -> dict:
     clean["apikey"] = TM_KEY
 
     timeout = httpx.Timeout(10.0, read=20.0)
+    print(f"Ticketmaster GET {path} with params: {clean}")
     async with httpx.AsyncClient(timeout=timeout) as c:
         r = await c.get(f"{TM_BASE}{path}", params=clean)
 
@@ -95,16 +95,6 @@ def _parse_event(e: dict) -> EventItem:
         name=v0.get("name"),
         city=(v0.get("city") or {}).get("name"),
         country=(v0.get("country") or {}).get("countryCode"),
-        lat=(
-            float(v0["location"]["latitude"])
-            if v0.get("location", {}).get("latitude")
-            else None
-        ),
-        lon=(
-            float(v0["location"]["longitude"])
-            if v0.get("location", {}).get("longitude")
-            else None
-        ),
     )
 
     prices = [
@@ -137,33 +127,70 @@ async def root():
     }
 
 
-@app.get("/healthz", tags=["meta"])
-async def healthz():
-    return {"ok": True}
-
-
 @app.get(
-    "/events",
+    "/search",
     response_model=EventSearchResponse,
     tags=["events"],
 )
 async def search_events(
     keyword: Optional[str] = None,
     city: Optional[str] = None,
-    countryCode: Optional[str] = None,
-    startDateTime: Optional[str] = None,
-    endDateTime: Optional[str] = None,
-    latlong: Optional[str] = Query(
-        None,
-        description="e.g. '40.726,-74.002'",
-    ),
-    radius: Optional[str] = None,
-    unit: Optional[str] = None,
+    country_code: Optional[str] = None,
+    start_date: Optional[str] = None,
+    end_date: Optional[str] = None,
     page: int = 0,
     size: int = 20,
     sort: Optional[str] = None,
 ):
-    raw = await _tm_get("/events.json", locals())
+    params = {
+        "keyword": keyword,
+        "city": city,
+        "countryCode": country_code,
+        "startDateTime": start_date,
+        "endDateTime": end_date,
+        "page": page,
+        "size": size,
+        "sort": sort,
+        "classificationName": "Music",
+    }
+
+    if(params["startDateTime"] is not None):
+        try:
+            # Try parsing as full ISO format first
+            dt = datetime.fromisoformat(params["startDateTime"])
+        except ValueError:
+            try:
+                # Try parsing as YYYY-MM-DD
+                dt = datetime.strptime(params["startDateTime"], "%Y-%m-%d")
+            except ValueError:
+                try:
+                    # Try parsing as YYYY-MM-DDTHH:MM
+                    dt = datetime.strptime(params["startDateTime"], "%Y-%m-%dT%H:%M")
+                except ValueError:
+                    raise HTTPException(400, "Invalid startDateTime format")
+        params["startDateTime"] = dt.replace(tzinfo=timezone(timedelta(hours=-4))).isoformat()
+
+    if(params["endDateTime"] is not None):
+        try:
+            # Try parsing as full ISO format first
+            dt = datetime.fromisoformat(params["endDateTime"])
+        except ValueError:
+            try:
+                # Try parsing as YYYY-MM-DD
+                dt = datetime.strptime(params["endDateTime"], "%Y-%m-%d")
+            except ValueError:
+                try:
+                    # Try parsing as YYYY-MM-DDTHH:MM
+                    dt = datetime.strptime(params["endDateTime"], "%Y-%m-%dT%H:%M")
+                except ValueError:
+                    raise HTTPException(400, "Invalid endDateTime format")
+        params["endDateTime"] = dt.replace(tzinfo=timezone(timedelta(hours=-4))).isoformat()
+
+    clean_params = {k: v for k, v in params.items() if v is not None}
+
+    print(f"Ticketmaster search with params: {clean_params}")
+
+    raw = await _tm_get("/events.json", clean_params)
     page_info = raw.get("page", {})
 
     items = [
