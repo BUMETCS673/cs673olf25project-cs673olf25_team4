@@ -2,10 +2,14 @@
 main.py
 
 Acts as the main entry point for JamBase provider.
-Exposes FastAPI endpoints that call code from jambase_client
+Exposes FastAPI endpoints that call code from jambase_client.
+
+Most of this code was written by humans. We asked Copilot to help us refactor the /search endpoint
+to match the same response model as the Ticketmaster provider, so that the backend can treat them
+the same way.
 """
 
-from datetime import date
+from datetime import date, datetime
 import os
 from typing import List, Dict, Any, Optional
 
@@ -20,6 +24,38 @@ class ConcertResponse(BaseModel):
     source: str
     parameters: List[Optional[str]]
     results: List[Dict[str, Any]]
+
+
+class PriceRange(BaseModel):
+    currency: Optional[str] = None
+    min: Optional[float] = None
+    max: Optional[float] = None
+
+
+class Venue(BaseModel):
+    id: Optional[str] = None
+    name: Optional[str] = None
+    city: Optional[str] = None
+    country: Optional[str] = None
+
+
+class EventItem(BaseModel):
+    id: str
+    name: Optional[str] = None
+    url: Optional[str] = None
+    startDateTime: Optional[str] = None
+    segment: Optional[str] = None
+    genre: Optional[str] = None
+    venue: Optional[Venue] = None
+    priceRanges: Optional[List[PriceRange]] = None
+
+
+class EventSearchResponse(BaseModel):
+    totalElements: int
+    page: int
+    size: int
+    data: List[EventItem]
+    next: Optional[str] = None
 
 
 async def get_events(city_str, start_date, end_date, keyword=None):
@@ -49,6 +85,7 @@ async def get_events(city_str, start_date, end_date, keyword=None):
         "eventDateTo": end_date,
         "geoCityId": jambase_city_id,
         "keyword": keyword,
+        "@type": "concert"
     }
     print(query_string)
     async with httpx.AsyncClient(timeout=30) as client:
@@ -153,31 +190,93 @@ async def root():
     return {"status": "ok", "message": "Jambase service is running."}
 
 
-@app.get("/search", response_model=ConcertResponse)
+@app.get("/search", response_model=EventSearchResponse)
 async def search(
-    city: Optional[str]  = Query(None, description="City to search concerts for"),
-    start_date: Optional[str] = Query(None, description="Search start date (YYYY-MM-DD)"),  # noqa
-    end_date: Optional[str] = Query(None, description="Search end date (YYYY-MM-DD)"),  # noqa
-    keyword: Optional[str] = Query(None, description="Keyword"),  # noqa
+    city: Optional[str] = Query(None, description="City to search concerts for"),
+    start_date: Optional[str] = Query(None, description="Search start date (YYYY-MM-DD)"),
+    end_date: Optional[str] = Query(None, description="Search end date (YYYY-MM-DD)"),
+    keyword: Optional[str] = Query(None, description="Search keyword"),
+    page: int = 0,
+    size: int = 50,
 ):
     """
-    Gets Concert obj from concerts.py result after querying the JamBase API.
+    Query JamBase and return results using the shared EventSearchResponse format
+    (same shape as Ticketmaster provider).
     """
-    
-    print("Jambase search called with:", city, start_date, end_date, keyword)
-
     try:
-        concerts = await get_concert_objs_from_jambase(
-            city, start_date, end_date, keyword
-        )  # noqa
+        # call existing helper that queries JamBase API and returns raw JSON
+        raw = await get_events(city, start_date, end_date, keyword)
     except Exception as e:
-        raise HTTPException(
-            status_code=502,
-            detail=f"Failed to fetch data from JamBase: {str(e)}",  # noqa
-        )
+        raise HTTPException(status_code=502, detail=f"JamBase upstream error: {e}")
 
-    return ConcertResponse(
-        source="jambase",
-        parameters=[city, str(start_date), str(end_date)],
-        results=[c.to_dict() for c in concerts],
+    events = raw.get("events", []) if isinstance(raw, dict) else []
+    items: List[EventItem] = []
+    for ev in events:
+        try:
+            # location in JamBase is under "location" (sample) — fallback to "venue"
+            loc = ev.get("location") or ev.get("venue") or {}
+            addr = loc.get("address", {}) if isinstance(loc, dict) else {}
+            # Build venue with best-effort fields
+            venue = Venue(
+                id=str(loc.get("identifier") or loc.get("id")) if loc else None,
+                name=loc.get("name"),
+                city=addr.get("addressLocality") or loc.get("city"),
+                country=(addr.get("addressCountry", {}).get("name")
+                         if isinstance(addr.get("addressCountry"), dict) else addr.get("addressCountry"))
+                        or loc.get("country"),
+            )
+
+            # startDate / startDateTime / datetime mapping
+            start_dt = ev.get("startDate") or ev.get("startDateTime") or ev.get("datetime") or ev.get("datePublished")
+            if isinstance(start_dt, datetime):
+                start_dt = start_dt.isoformat()
+
+            # segment: prefer explicit field, otherwise use @type or eventType
+            segment = ev.get("segment") or ev.get("eventType") or ev.get("@type")
+
+            # genre: aggregate genres from performers (de-duplicate)
+            genres = []
+            for p in ev.get("performer", []) or []:
+                g = p.get("genre")
+                if isinstance(g, list):
+                    for gg in g:
+                        if gg and gg not in genres:
+                            genres.append(gg)
+                elif g:
+                    if g not in genres:
+                        genres.append(g)
+            genre_val = ", ".join(genres) if genres else None
+
+            prices = [
+                PriceRange(currency=p.get("currency"), min=p.get("min"), max=p.get("max"))
+                for p in (ev.get("priceRanges") or [])
+            ] or None
+
+            item = EventItem(
+                id=str(ev.get("id") or ev.get("event_id") or ev.get("identifier") or ""),
+                name=ev.get("name") or ev.get("title"),
+                url=ev.get("url"),
+                startDateTime=start_dt,
+                segment=segment,
+                genre=genre_val,
+                venue=venue,
+                priceRanges=prices,
+            )
+            items.append(item)
+        except Exception:
+            # skip malformed event
+            continue
+
+    # Build paged response; JamBase doesn't necessarily return paging in same shape,
+    # so approximate using provided page/size and totalElements as length.
+    total = len(items)
+    start = page * size
+    paged = items[start : start + size]  # noqa: E203
+
+    return EventSearchResponse(
+        totalElements=total,
+        page=page,
+        size=len(paged),
+        data=paged,
+        next=None,
     )
