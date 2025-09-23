@@ -54,7 +54,7 @@ jobs:
             else
               echo "No running containers found."
             fi
-
+            
             echo "Checking for old repository..."
             if [ -d "cs673olf25project-cs673olf25_team4" ]; then
               echo "Removing old repository..."

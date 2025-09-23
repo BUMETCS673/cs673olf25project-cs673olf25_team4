@@ -6,11 +6,15 @@ on a city and a date range, and the cities endpoint which is required
 to search for events.
 """
 
-import httpx
 import os
+import httpx
+from typing import Dict
 from dotenv import load_dotenv
+from .provider_client_interface import ProviderClientInterface
 
 load_dotenv()
+
+JAMBASE_PROVIDER_URL = os.getenv("JAMBASE_PROVIDER_URL", "http://jambase_provider:8000")
 
 
 def get_api_key():
@@ -23,6 +27,27 @@ def get_api_key():
         found a dummy key.
     """
     return os.getenv("JAMBASE_API_KEY", "dummy-test-key")
+
+
+class JamBaseClient(ProviderClientInterface):
+    async def search_events(self, params: Dict) -> Dict:
+        # JamBase expects the keyword parameter as 'q'
+        clean = {k: v for k, v in params.items() if v is not None}
+        if "keyword" in clean:
+            clean["q"] = clean.pop("keyword")
+        # JamBase may expect dates in a certain format—assume they are preformatted
+        print(f"{JAMBASE_PROVIDER_URL}/search")
+        print(clean)
+        async with httpx.AsyncClient(timeout=20.0) as client:
+            response = await client.get(f"{JAMBASE_PROVIDER_URL}/search", params=clean)
+            response.raise_for_status()
+            return response.json()
+
+    async def get_event(self, event_id: str) -> Dict:
+        async with httpx.AsyncClient(timeout=20.0) as client:
+            response = await client.get(f"{JAMBASE_PROVIDER_URL}/events/{event_id}")
+            response.raise_for_status()
+            return response.json()
 
 
 async def get_events(city_str, start_date, end_date):
