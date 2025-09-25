@@ -111,9 +111,7 @@ class JambaseService:
     def __init__(self):
         self.router = APIRouter()
 
-        self.router.add_api_route(
-            "/", self.root, methods=["GET"], tags=["meta"]
-        )
+        self.router.add_api_route("/", self.root, methods=["GET"], tags=["meta"])
         self.router.add_api_route(
             "/search",
             self.search,
@@ -129,8 +127,12 @@ class JambaseService:
     async def search(
         self,
         city: Optional[str] = Query(None, description="City to search concerts for"),
-        start_date: Optional[str] = Query(None, description="Search start date (YYYY-MM-DD)"),
-        end_date: Optional[str] = Query(None, description="Search end date (YYYY-MM-DD)"),
+        start_date: Optional[str] = Query(
+            None, description="Search start date (YYYY-MM-DD)"
+        ),
+        end_date: Optional[str] = Query(
+            None, description="Search end date (YYYY-MM-DD)"
+        ),
         keyword: Optional[str] = Query(None, description="Search keyword"),
         page: int = 0,
         size: int = 50,
@@ -184,12 +186,16 @@ class JambaseService:
                 genre_val = ", ".join(genres) if genres else None
 
                 prices = [
-                    PriceRange(currency=p.get("currency"), min=p.get("min"), max=p.get("max"))
+                    PriceRange(
+                        currency=p.get("currency"), min=p.get("min"), max=p.get("max")
+                    )
                     for p in (ev.get("priceRanges") or [])
                 ] or None
 
                 item = EventItem(
-                    id=str(ev.get("id") or ev.get("event_id") or ev.get("identifier") or ""),
+                    id=str(
+                        ev.get("id") or ev.get("event_id") or ev.get("identifier") or ""
+                    ),
                     name=ev.get("name") or ev.get("title"),
                     url=ev.get("url"),
                     startDateTime=start_dt,
