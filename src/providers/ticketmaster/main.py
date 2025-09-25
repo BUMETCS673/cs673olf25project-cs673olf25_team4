@@ -131,9 +131,7 @@ class TicketmasterService:
     def __init__(self):
         self.router = APIRouter()
 
-        self.router.add_api_route(
-            "/", self.root, methods=["GET"], tags=["meta"]
-        )
+        self.router.add_api_route("/", self.root, methods=["GET"], tags=["meta"])
         self.router.add_api_route(
             "/search",
             self.search_events,
@@ -186,7 +184,9 @@ class TicketmasterService:
                     dt = datetime.strptime(params["startDateTime"], "%Y-%m-%d")
                 except ValueError:
                     try:
-                        dt = datetime.strptime(params["startDateTime"], "%Y-%m-%dT%H:%M")
+                        dt = datetime.strptime(
+                            params["startDateTime"], "%Y-%m-%dT%H:%M"
+                        )
                     except ValueError:
                         raise HTTPException(400, "Invalid startDateTime format")
             params["startDateTime"] = dt.replace(
@@ -250,7 +250,7 @@ def main():
     uvicorn.run(
         "main:create_app",
         host="0.0.0.0",
-        port=8001,   # 👈 port adjusted to Ticketmaster default
+        port=8001,  # 👈 port adjusted to Ticketmaster default
         reload=True,
         factory=True,
     )
