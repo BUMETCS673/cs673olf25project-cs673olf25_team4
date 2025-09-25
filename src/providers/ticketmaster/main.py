@@ -1,10 +1,21 @@
+"""
+main.py
+
+Acts as the main entry point for Ticketmaster provider.
+Encapsulates routes inside TicketmasterService for consistency
+with other providers (e.g., JamBase).
+"""
+
 from datetime import datetime, timedelta, timezone
 import os
 from typing import List, Optional
+
 import httpx
-from fastapi import FastAPI, HTTPException
+import uvicorn
+from fastapi import FastAPI, HTTPException, APIRouter
 from pydantic import BaseModel
 from dotenv import load_dotenv
+
 
 # Load .env file from the project root directory
 load_dotenv(
@@ -54,9 +65,6 @@ class EventSearchResponse(BaseModel):
     size: int
     data: List[EventItem]
     next: Optional[str] = None
-
-
-app = FastAPI(title="ticketmaster-provider")
 
 
 # ---------- Helpers ----------
@@ -118,108 +126,135 @@ def _parse_event(e: dict) -> EventItem:
     )
 
 
-# ---------- Endpoints ----------
-@app.get("/", tags=["meta"])
-async def root():
-    return {
-        "status": "ok",
-        "message": "Ticketmaster service is running.",
-    }
+# ---------- Ticketmaster Service ----------
+class TicketmasterService:
+    def __init__(self):
+        self.router = APIRouter()
 
+        self.router.add_api_route(
+            "/", self.root, methods=["GET"], tags=["meta"]
+        )
+        self.router.add_api_route(
+            "/search",
+            self.search_events,
+            methods=["GET"],
+            response_model=EventSearchResponse,
+            tags=["events"],
+        )
+        self.router.add_api_route(
+            "/events/{event_id}",
+            self.get_event,
+            methods=["GET"],
+            response_model=EventItem,
+            tags=["events"],
+        )
 
-@app.get(
-    "/search",
-    response_model=EventSearchResponse,
-    tags=["events"],
-)
-async def search_events(
-    keyword: Optional[str] = None,
-    city: Optional[str] = None,
-    country_code: Optional[str] = None,
-    start_date: Optional[str] = None,
-    end_date: Optional[str] = None,
-    page: int = 0,
-    size: int = 20,
-    sort: Optional[str] = None,
-):
-    params = {
-        "keyword": keyword,
-        "city": city,
-        "countryCode": country_code,
-        "startDateTime": start_date,
-        "endDateTime": end_date,
-        "page": page,
-        "size": size,
-        "sort": sort,
-        "classificationName": "Music",
-    }
+    async def root(self):
+        return {
+            "status": "ok",
+            "message": "Ticketmaster service is running.",
+        }
 
-    if params["startDateTime"] is not None:
-        try:
-            # Try parsing as full ISO format first
-            dt = datetime.fromisoformat(params["startDateTime"])
-        except ValueError:
+    async def search_events(
+        self,
+        keyword: Optional[str] = None,
+        city: Optional[str] = None,
+        country_code: Optional[str] = None,
+        start_date: Optional[str] = None,
+        end_date: Optional[str] = None,
+        page: int = 0,
+        size: int = 20,
+        sort: Optional[str] = None,
+    ):
+        params = {
+            "keyword": keyword,
+            "city": city,
+            "countryCode": country_code,
+            "startDateTime": start_date,
+            "endDateTime": end_date,
+            "page": page,
+            "size": size,
+            "sort": sort,
+            "classificationName": "Music",
+        }
+
+        if params["startDateTime"] is not None:
             try:
-                # Try parsing as YYYY-MM-DD
-                dt = datetime.strptime(params["startDateTime"], "%Y-%m-%d")
+                dt = datetime.fromisoformat(params["startDateTime"])
             except ValueError:
                 try:
-                    # Try parsing as YYYY-MM-DDTHH:MM
-                    dt = datetime.strptime(params["startDateTime"], "%Y-%m-%dT%H:%M")
+                    dt = datetime.strptime(params["startDateTime"], "%Y-%m-%d")
                 except ValueError:
-                    raise HTTPException(400, "Invalid startDateTime format")
-        params["startDateTime"] = dt.replace(
-            tzinfo=timezone(timedelta(hours=-4))
-        ).isoformat()
+                    try:
+                        dt = datetime.strptime(params["startDateTime"], "%Y-%m-%dT%H:%M")
+                    except ValueError:
+                        raise HTTPException(400, "Invalid startDateTime format")
+            params["startDateTime"] = dt.replace(
+                tzinfo=timezone(timedelta(hours=-4))
+            ).isoformat()
 
-    if params["endDateTime"] is not None:
-        try:
-            # Try parsing as full ISO format first
-            dt = datetime.fromisoformat(params["endDateTime"])
-        except ValueError:
+        if params["endDateTime"] is not None:
             try:
-                # Try parsing as YYYY-MM-DD
-                dt = datetime.strptime(params["endDateTime"], "%Y-%m-%d")
+                dt = datetime.fromisoformat(params["endDateTime"])
             except ValueError:
                 try:
-                    # Try parsing as YYYY-MM-DDTHH:MM
-                    dt = datetime.strptime(params["endDateTime"], "%Y-%m-%dT%H:%M")
+                    dt = datetime.strptime(params["endDateTime"], "%Y-%m-%d")
                 except ValueError:
-                    raise HTTPException(400, "Invalid endDateTime format")
-        params["endDateTime"] = dt.replace(
-            tzinfo=timezone(timedelta(hours=-4))
-        ).isoformat()
+                    try:
+                        dt = datetime.strptime(params["endDateTime"], "%Y-%m-%dT%H:%M")
+                    except ValueError:
+                        raise HTTPException(400, "Invalid endDateTime format")
+            params["endDateTime"] = dt.replace(
+                tzinfo=timezone(timedelta(hours=-4))
+            ).isoformat()
 
-    clean_params = {k: v for k, v in params.items() if v is not None}
+        clean_params = {k: v for k, v in params.items() if v is not None}
 
-    print(f"Ticketmaster search with params: {clean_params}")
+        print(f"Ticketmaster search with params: {clean_params}")
 
-    raw = await _tm_get("/events.json", clean_params)
-    page_info = raw.get("page", {})
+        raw = await _tm_get("/events.json", clean_params)
+        page_info = raw.get("page", {})
 
-    items = [
-        _parse_event(e) for e in (raw.get("_embedded", {}).get("events") or [])
-    ]  # noqa: E501
+        items = [
+            _parse_event(e) for e in (raw.get("_embedded", {}).get("events") or [])
+        ]
 
-    next_link = (raw.get("_links", {}) or {}).get("next", {}).get("href")
+        next_link = (raw.get("_links", {}) or {}).get("next", {}).get("href")
 
-    return EventSearchResponse(
-        totalElements=page_info.get("totalElements", 0),
-        page=page_info.get("number", page),
-        size=page_info.get("size", size),
-        data=items,
-        next=next_link,
+        return EventSearchResponse(
+            totalElements=page_info.get("totalElements", 0),
+            page=page_info.get("number", page),
+            size=page_info.get("size", size),
+            data=items,
+            next=next_link,
+        )
+
+    async def get_event(self, event_id: str):
+        raw = await _tm_get(f"/events/{event_id}.json", {})
+        return _parse_event(raw)
+
+
+def create_app() -> FastAPI:
+    """Factory to build the FastAPI app with TicketmasterService routes."""
+    app = FastAPI(title="Ticketmaster Provider")
+    ticketmaster_service = TicketmasterService()
+    app.include_router(ticketmaster_service.router)
+    return app
+
+
+app = create_app()
+
+
+def main():
+    """Entry point for running the Ticketmaster service directly."""
+    uvicorn.run(
+        "main:create_app",
+        host="0.0.0.0",
+        port=8001,   # 👈 port adjusted to Ticketmaster default
+        reload=True,
+        factory=True,
     )
 
 
-@app.get(
-    "/events/{event_id}",
-    response_model=EventItem,
-    tags=["events"],
-)
-async def get_event(event_id: str):
-    raw = await _tm_get(
-        f"/events/{event_id}.json",
-        {},
-    )
-    return _parse_event(raw)
+if __name__ == "__main__":
+    main()
