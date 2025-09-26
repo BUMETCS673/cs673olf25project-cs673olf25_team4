@@ -61,6 +61,7 @@ class ConcertsService:
         if provider not in self.providers:
             raise HTTPException(status_code=400, detail=f"Unknown provider: {provider}")
 
+        print(f"Using provider: {provider}")
         try:
             clean = {k: v for k, v in params.items() if v is not None}
             async with httpx.AsyncClient(timeout=20.0) as client:
