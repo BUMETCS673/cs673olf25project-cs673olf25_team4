@@ -6,7 +6,7 @@ Encapsulates routes inside TicketmasterService for consistency
 with other providers (e.g., JamBase).
 """
 
-from datetime import datetime, timedelta, timezone
+from datetime import datetime
 import os
 from typing import List, Optional
 
@@ -15,7 +15,6 @@ import uvicorn
 from fastapi import FastAPI, HTTPException, APIRouter
 from pydantic import BaseModel
 from dotenv import load_dotenv
-from datetime import datetime
 from zoneinfo import ZoneInfo
 
 

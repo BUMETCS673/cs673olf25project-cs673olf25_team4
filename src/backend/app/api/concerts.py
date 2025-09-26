@@ -1,5 +1,4 @@
 import os
-import random
 from typing import Optional
 
 import httpx
@@ -74,7 +73,7 @@ class ConcertsService:
             raise HTTPException(
                 status_code=502, detail=f"Error fetching concert data: {e}"
             )
-        
+
     def get_provider(self, requested=None):
         if requested:
             return requested
