@@ -1,5 +1,5 @@
 """
-main.py
+jambase_service.py
 
 Acts as the main entry point for JamBase provider.
 Encapsulates routes inside JambaseService for consistency
@@ -14,6 +14,15 @@ import httpx
 import uvicorn
 from fastapi import FastAPI, HTTPException, Query, APIRouter
 from pydantic import BaseModel
+
+import logging
+
+logging.basicConfig(
+    level=logging.INFO,  # or DEBUG if you want more detail
+    format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
+)
+
+logger = logging.getLogger(__name__)
 
 
 # ---------- Models ----------
@@ -59,7 +68,7 @@ class EventSearchResponse(BaseModel):
 async def get_events(city_str, start_date, end_date, keyword=None):
     """Queries the JamBase /events endpoint."""
     jambase_city_id = await get_city_id(city_str)
-    print("jambase_city_id:", jambase_city_id)
+    logger.info("jambase_city_id: %s", jambase_city_id)
 
     url = "https://www.jambase.com/jb-api/v1/events"
     query_string = {
@@ -70,7 +79,7 @@ async def get_events(city_str, start_date, end_date, keyword=None):
         "keyword": keyword,
         "@type": "concert",
     }
-    print(query_string)
+    logger.info("JamBase query params: %s", query_string)
 
     async with httpx.AsyncClient(timeout=30) as client:
         response = await client.get(url, params=query_string)
@@ -212,7 +221,7 @@ class JambaseService:
                 )
                 items.append(item)
             except Exception:
-                print(f"Failed to parse event: {ev}")
+                logger.info(f"Failed to parse event: {ev}")
                 continue
 
         total = len(items)

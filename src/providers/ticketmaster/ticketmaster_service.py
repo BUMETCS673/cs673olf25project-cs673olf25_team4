@@ -1,5 +1,5 @@
 """
-main.py
+ticketmaster_service.py
 
 Acts as the main entry point for Ticketmaster provider.
 Encapsulates routes inside TicketmasterService for consistency
@@ -16,6 +16,14 @@ from fastapi import FastAPI, HTTPException, APIRouter
 from pydantic import BaseModel
 from dotenv import load_dotenv
 from zoneinfo import ZoneInfo
+import logging
+
+logging.basicConfig(
+    level=logging.INFO,  # or DEBUG if you want more detail
+    format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
+)
+
+logger = logging.getLogger(__name__)
 
 
 # Load .env file from the project root directory
@@ -77,7 +85,7 @@ async def _tm_get(path: str, params: dict) -> dict:
     clean["apikey"] = TM_KEY
 
     timeout = httpx.Timeout(10.0, read=20.0)
-    print(f"Ticketmaster GET {path} with params: {clean}")
+    logger.info("Ticketmaster GET %s with params: %s", path, clean)
     async with httpx.AsyncClient(timeout=timeout) as c:
         r = await c.get(f"{TM_BASE}{path}", params=clean)
 
@@ -211,7 +219,7 @@ class TicketmasterService:
 
         clean_params = {k: v for k, v in params.items() if v is not None}
 
-        print(f"Ticketmaster search with params: {clean_params}")
+        logger.info("Ticketmaster search with params: %s", clean_params)
 
         raw = await _tm_get("/events.json", clean_params)
         page_info = raw.get("page", {})
