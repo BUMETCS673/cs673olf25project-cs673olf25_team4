@@ -257,7 +257,7 @@ def main():
     # Check if binding to all interfaces was explicitly allowed
     allow_all = os.getenv("JAMBASE_ALLOW_BIND_ALL", "false").lower() in ("1", "true", "yes")
 
-    if not allow_all and host in ("0.0.0.0", "::"):
+    if not allow_all and host in ("0.0.0.0", "::"): # nosec B104
         logger.warning(
             "Binding to '%s' (all interfaces) is disabled by default. "
             "Override by setting JAMBASE_ALLOW_BIND_ALL=true. "
