@@ -6,6 +6,7 @@ Wires up API routers and runs the FastAPI app.
 """
 
 import uvicorn
+import os
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -39,10 +40,13 @@ app = create_app()
 
 def main():
     """Run the backend with uvicorn directly."""
+    host = os.getenv("BEATMAP_HOST", "127.0.0.1")  # default to localhost to avoid binding all interfaces
+    port = int(os.getenv("BEATMAP_PORT", "8000"))
+
     uvicorn.run(
         "app.main:create_app",
-        host="0.0.0.0",
-        port=8000,
+        host=host,
+        port=port,
         reload=True,
         factory=True,
     )

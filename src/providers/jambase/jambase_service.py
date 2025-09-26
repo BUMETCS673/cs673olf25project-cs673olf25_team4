@@ -250,10 +250,21 @@ app = create_app()
 
 def main():
     """Entry point for running the Jambase service directly."""
+    host = os.getenv("JAMBASE_HOST", "127.0.0.1")
+    # Prevent accidental binding to all interfaces unless explicitly allowed.
+    allow_all = os.getenv("JAMBASE_ALLOW_BIND_ALL", "false").lower() in ("1", "true", "yes")
+    if host in ("0.0.0.0", "::") and not allow_all:
+        logger.warning(
+            "Requested host %s would bind to all interfaces. "
+            "Set JAMBASE_ALLOW_BIND_ALL=true to allow this. Falling back to 127.0.0.1",
+            host,
+        )
+        host = "127.0.0.1"
+
     uvicorn.run(
         "jambase_service:create_app",
-        host="0.0.0.0",
-        port=8002,
+        host=host,
+        port=int(os.getenv("JAMBASE_PORT", 8002)),
         reload=True,
         factory=True,
     )
