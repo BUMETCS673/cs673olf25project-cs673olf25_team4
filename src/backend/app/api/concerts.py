@@ -4,7 +4,14 @@ from typing import Optional
 import httpx
 from fastapi import APIRouter, Query, HTTPException
 from itertools import cycle
+import logging
 
+logger = logging.getLogger(__name__)
+
+logging.basicConfig(
+    level=logging.INFO,  # or DEBUG if you want more detail
+    format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
+)
 
 class ConcertsService:
     def __init__(self):
@@ -50,7 +57,7 @@ class ConcertsService:
             "end_date": end_date,
             "keyword": keyword,
         }
-        print(f"Search request params: {params}")
+        logger.info(f"Search request params: {params}")
 
         if provider is None:
             provider = self.get_provider()
@@ -60,7 +67,7 @@ class ConcertsService:
         if provider not in self.providers:
             raise HTTPException(status_code=400, detail=f"Unknown provider: {provider}")
 
-        print(f"Using provider: {provider}")
+        logger.info(f"Using provider: {provider}")
         try:
             clean = {k: v for k, v in params.items() if v is not None}
             async with httpx.AsyncClient(timeout=20.0) as client:
