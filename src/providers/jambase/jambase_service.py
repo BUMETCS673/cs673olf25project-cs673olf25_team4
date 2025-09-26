@@ -104,8 +104,8 @@ def get_api_key():
     api_key = os.getenv("JAMBASE_API_KEY")
     if not api_key:
         raise RuntimeError(
-            "JAMBASE_API_KEY environment variable is not set.\
-                  Please configure your JamBase API key."
+            "JAMBASE_API_KEY environment variable is not set."
+            " Please configure your JamBase API key."
         )
     return api_key
 
@@ -251,7 +251,7 @@ app = create_app()
 def main():
     """Entry point for running the Jambase service directly."""
     uvicorn.run(
-        "main:create_app",
+        "jambase_service:create_app",
         host="0.0.0.0",
         port=8002,
         reload=True,
