@@ -260,16 +260,17 @@ def main():
     host = os.getenv("TM_HOST", "127.0.0.1")
     port = int(os.getenv("TM_PORT", "8001"))
 
-    # Require an explicit opt-in to bind to all interfaces.
-    if host == "0.0.0.0" and os.getenv("TM_ALLOW_BIND_ALL", "false").lower() not in (
-        "1",
-        "true",
-        "yes",
-    ):
+    allow_all = os.getenv("TM_ALLOW_BIND_ALL", "false").lower() in ("1", "true", "yes")
+
+    # Fail safe: don’t bind to all interfaces unless explicitly allowed
+    if not allow_all and host in ("0.0.0.0", "::"):
         logger.warning(
-            "TM_HOST=0.0.0.0 requested but TM_ALLOW_BIND_ALL not enabled. "
-            "Set TM_ALLOW_BIND_ALL=true to confirm binding to all interfaces."
+            "Binding to '%s' (all interfaces) is disabled by default. "
+            "Set TM_ALLOW_BIND_ALL=true to override. "
+            "Falling back to localhost (127.0.0.1).",
+            host,
         )
+        host = "127.0.0.1"
 
     uvicorn.run(
         "ticketmaster_service:create_app",
@@ -278,6 +279,7 @@ def main():
         reload=True,
         factory=True,
     )
+
 
 
 if __name__ == "__main__":
