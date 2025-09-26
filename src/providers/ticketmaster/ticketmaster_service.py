@@ -249,7 +249,7 @@ app = create_app()
 def main():
     """Entry point for running the Ticketmaster service directly."""
     uvicorn.run(
-        "main:create_app",
+        "ticketmaster_service:create_app",
         host="0.0.0.0",
         port=8001,  # 👈 port adjusted to Ticketmaster default
         reload=True,
