@@ -242,7 +242,7 @@ app = create_app()
 def main():
     """Entry point for running the Jambase service directly."""
     uvicorn.run(
-        "main:create_app",
+        "jambase_service:create_app",
         host="0.0.0.0",
         port=8002,
         reload=True,
