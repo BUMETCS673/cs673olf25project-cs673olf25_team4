@@ -95,8 +95,8 @@ def get_api_key():
     api_key = os.getenv("JAMBASE_API_KEY")
     if not api_key:
         raise RuntimeError(
-            "JAMBASE_API_KEY environment variable is not set.\
-                  Please configure your JamBase API key."
+            "JAMBASE_API_KEY environment variable is not set."
+            " Please configure your JamBase API key."
         )
     return api_key
 
