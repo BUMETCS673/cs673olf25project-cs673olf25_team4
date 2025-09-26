@@ -10,6 +10,8 @@ jobs:
     runs-on: ubuntu-latest
     env:
       JAMBASE_API_KEY: ${{ secrets.JAMBASE_API_KEY }}
+      TM_API_SECRET: ${{ secrets.TM_API_SECRET }}
+      TM_API_KEY: ${{ secrets.TM_API_KEY }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v3
@@ -25,6 +27,8 @@ jobs:
           key: ${{ secrets.EC2_DEPLOY_KEY }}
           script: |
             export JAMBASE_API_KEY=${{ secrets.JAMBASE_API_KEY }}
+            export TM_API_SECRET=${{ secrets.TM_API_SECRET }}
+            export TM_API_KEY=${{ secrets.TM_API_KEY }}
             echo "Deploying test branch"
 
             # Ensure Git is installed
