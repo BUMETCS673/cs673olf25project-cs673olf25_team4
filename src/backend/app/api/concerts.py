@@ -1,117 +1,88 @@
-# app/api/concerts.py
-"""
-concerts.py
-
-- JamBase helpers (kept unchanged):
-  Concert class, get_concert_objs_from_jambase, jambase_parse_performers
-- Ticketmaster services (new): list_concerts_service, get_concert_service
-  (no APIRouter here; routes are defined in app/main.py)
-"""
-
+import os
 from typing import Optional
+
 import httpx
-from fastapi import HTTPException
+from fastapi import APIRouter, Query, HTTPException
+from itertools import cycle
+import logging
 
-# ---------------- JamBase (UNTOUCHED) ----------------
-from ..clients.jambase_client import get_events as jambase_get_events
-from ..clients import ticketmaster_client
+logger = logging.getLogger(__name__)
 
-
-class Concert:
-    def __init__(self, id, name, venue, date, artist, lineup):
-        self.id = id
-        self.name = name
-        self.venue = venue
-        self.date = date
-        self.artist = artist
-        self.lineup = lineup
-
-    def to_dict(self):
-        return {
-            "id": self.id,
-            "name": self.name,
-            "venue": self.venue,
-            "date": self.date,
-            "artist": self.artist,
-            "lineup": self.lineup,
-        }
+logging.basicConfig(
+    level=logging.INFO,  # or DEBUG if you want more detail
+    format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
+)
 
 
-async def get_concert_objs_from_jambase(city, start_date, end_date):
-    """
-    Gets the data from JamBase for events in a city in a date range.
-    """
-    event_data = await jambase_get_events(city, start_date, end_date)
-    concerts = []
+class ConcertsService:
+    def __init__(self):
+        self.router = APIRouter(tags=["concerts"])
 
-    for event in event_data.get("events"):
-        performer_result = jambase_parse_performers(event.get("performer"))
-        concerts.append(
-            Concert(
-                event.get("identifier"),
-                event.get("name"),
-                event.get("location").get("name"),
-                event.get("startDate"),
-                performer_result[0],
-                performer_result[1],
-            )
+        # Register routes
+        self.router.add_api_route("/", self.root, methods=["GET"], tags=["meta"])
+        self.router.add_api_route(
+            "/search", self.search, methods=["GET"], tags=["concerts"]
         )
 
-    return concerts
+        # Provider URLs from env
+        self.providers = {
+            "jambase": os.getenv(
+                "JAMBASE_PROVIDER_URL", "http://jambase_provider:8000"
+            ),
+            "ticketmaster": os.getenv(
+                "TM_PROVIDER_URL", "http://ticketmaster_provider:8000"
+            ),
+        }
 
+        self._provider_cycle = cycle(self.providers.keys())
 
-def jambase_parse_performers(performer_list):
-    """
-    Extract headliner and lineup from JamBase performer list.
-    """
-    artist = ""
-    lineup = []
-    for performer in performer_list:
-        if performer.get("x-isHeadliner"):
-            artist = performer.get("name")
-        lineup.append(performer.get("name"))
-    return [artist, lineup]
+    async def root(self):
+        return {
+            "status": "ok",
+            "message": "Backend is running. Main entry point for beatmap.",
+        }
 
+    async def search(
+        self,
+        city: str = Query(None, description="City to search concerts in."),
+        start_date: str = Query(None, description="Start date YYYY-MM-DD"),
+        end_date: str = Query(None, description="End date YYYY-MM-DD"),
+        provider: str = Query(
+            None, description="Provider to search (jambase, ticketmaster)"
+        ),
+        keyword: Optional[str] = None,
+    ):
+        params = {
+            "city": city,
+            "start_date": start_date,
+            "end_date": end_date,
+            "keyword": keyword,
+        }
+        logger.info(f"Search request params: {params}")
 
-async def list_concerts_service(
-    *,
-    q: Optional[str] = None,
-    keyword: Optional[str] = None,
-    city: Optional[str] = None,
-    countryCode: Optional[str] = "US",
-    startDateTime: Optional[str] = None,
-    endDateTime: Optional[str] = None,
-    latlong: Optional[str] = None,
-    radius: Optional[str] = None,
-    unit: Optional[str] = None,
-    page: int = 0,
-    size: int = 20,
-    sort: Optional[str] = None,
-):
-    """Build params and proxy to Ticketmaster client (no router here)."""
-    search_keyword = keyword or q
-    params = {
-        "keyword": search_keyword,
-        "city": city,
-        "countryCode": countryCode,
-        "startDateTime": startDateTime,
-        "endDateTime": endDateTime,
-        "latlong": latlong,
-        "radius": radius,
-        "unit": unit,
-        "page": page,
-        "size": size,
-        "sort": sort,
-    }
-    try:
-        return await ticketmaster_client.search_events(params)
-    except httpx.HTTPStatusError as e:
-        raise HTTPException(status_code=e.response.status_code, detail=e.response.text)
+        if provider is None:
+            provider = self.get_provider()
+        else:
+            provider = provider.lower()
 
+        if provider not in self.providers:
+            raise HTTPException(status_code=400, detail=f"Unknown provider: {provider}")
 
-async def get_concert_service(event_id: str):
-    """Proxy to Ticketmaster client get_event (no router here)."""
-    try:
-        return await ticketmaster_client.get_event(event_id)
-    except httpx.HTTPStatusError as e:
-        raise HTTPException(status_code=e.response.status_code, detail=e.response.text)
+        logger.info(f"Using provider: {provider}")
+        try:
+            clean = {k: v for k, v in params.items() if v is not None}
+            async with httpx.AsyncClient(timeout=20.0) as client:
+                response = await client.get(
+                    f"{self.providers[provider]}/search", params=clean
+                )
+                response.raise_for_status()
+                return response.json()
+        except Exception as e:
+            raise HTTPException(
+                status_code=502, detail=f"Error fetching concert data: {e}"
+            )
+
+    def get_provider(self, requested=None):
+        if requested:
+            return requested
+        return next(self._provider_cycle)
