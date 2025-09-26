@@ -15,6 +15,8 @@ import uvicorn
 from fastapi import FastAPI, HTTPException, APIRouter
 from pydantic import BaseModel
 from dotenv import load_dotenv
+from datetime import datetime
+from zoneinfo import ZoneInfo
 
 
 # Load .env file from the project root directory
@@ -190,7 +192,7 @@ class TicketmasterService:
                     except ValueError:
                         raise HTTPException(400, "Invalid startDateTime format")
             params["startDateTime"] = dt.replace(
-                tzinfo=timezone(timedelta(hours=-4))
+                tzinfo=ZoneInfo("America/New_York")
             ).isoformat()
 
         if params["endDateTime"] is not None:
@@ -205,7 +207,7 @@ class TicketmasterService:
                     except ValueError:
                         raise HTTPException(400, "Invalid endDateTime format")
             params["endDateTime"] = dt.replace(
-                tzinfo=timezone(timedelta(hours=-4))
+                tzinfo=ZoneInfo("America/New_York")
             ).isoformat()
 
         clean_params = {k: v for k, v in params.items() if v is not None}

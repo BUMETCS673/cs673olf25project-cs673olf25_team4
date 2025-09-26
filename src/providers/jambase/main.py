@@ -91,8 +91,11 @@ async def get_city_id(city_str):
 
 
 def get_api_key():
-    """Return JamBase API key from env, or dummy fallback."""
-    return os.getenv("JAMBASE_API_KEY", "dummy-test-key")
+    """Return JamBase API key from env, or raise if not set."""
+    api_key = os.getenv("JAMBASE_API_KEY")
+    if not api_key:
+        raise RuntimeError("JAMBASE_API_KEY environment variable is not set. Please configure your JamBase API key.")
+    return api_key
 
 
 def jambase_parse_performers(performer_list):
@@ -206,6 +209,7 @@ class JambaseService:
                 )
                 items.append(item)
             except Exception:
+                print(f"Failed to parse event: {ev}")
                 continue
 
         total = len(items)

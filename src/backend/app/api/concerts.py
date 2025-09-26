@@ -4,6 +4,7 @@ from typing import Optional
 
 import httpx
 from fastapi import APIRouter, Query, HTTPException
+from itertools import cycle
 
 
 class ConcertsService:
@@ -25,6 +26,8 @@ class ConcertsService:
                 "TM_PROVIDER_URL", "http://ticketmaster_provider:8000"
             ),
         }
+
+        self._provider_cycle = cycle(self.providers.keys())
 
     async def root(self):
         return {
@@ -51,7 +54,7 @@ class ConcertsService:
         print(f"Search request params: {params}")
 
         if provider is None:
-            provider = random.choice(list(self.providers.keys()))
+            provider = self.get_provider()
         else:
             provider = provider.lower()
 
@@ -70,3 +73,8 @@ class ConcertsService:
             raise HTTPException(
                 status_code=502, detail=f"Error fetching concert data: {e}"
             )
+        
+    def get_provider(self, requested=None):
+        if requested:
+            return requested
+        return next(self._provider_cycle)
