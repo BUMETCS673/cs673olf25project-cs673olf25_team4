@@ -13,6 +13,7 @@ logging.basicConfig(
     format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
 )
 
+
 class ConcertsService:
     def __init__(self):
         self.router = APIRouter(tags=["concerts"])
