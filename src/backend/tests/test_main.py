@@ -1,18 +1,8 @@
-# src/backend/tests/test_main.py
-
-from unittest.mock import patch, AsyncMock, Mock
-
 import pytest
 from fastapi.testclient import TestClient
-
-# import from src.backend.app
-from src.backend.app.main import app
-from src.backend.app.clients import jambase_client
-from src.backend.app.api import concerts
+from app.main import app
 
 client = TestClient(app)
-
-# -------------------- Root & Health --------------------
 
 
 def test_root_status_code():
@@ -22,151 +12,102 @@ def test_root_status_code():
 
 def test_root_content():
     resp = client.get("/")
-    assert "beatmap" in resp.text
+    data = resp.json()
+    assert data["status"] == "ok"
+    assert "beatmap" in data["message"].lower()
 
 
-def test_healthz():
-    resp = client.get("/healthz")
-    assert resp.status_code == 200
-    assert resp.json()["ok"] is True
+# --- Mocking setup ---
 
 
-# -------------------- JamBase helpers --------------------
+class MockResponse:
+    def __init__(self, json_data, status_code=200):
+        self._json = json_data
+        self.status_code = status_code
+
+    def json(self):
+        return self._json
+
+    def raise_for_status(self):
+        if self.status_code >= 400:
+            raise Exception("HTTP error")
 
 
-@pytest.mark.asyncio
-async def test_get_city_id():
-    """Mock httpx"""
-    mock_response = Mock()
-    mock_response.json.return_value = {
-        "cities": [{"@type": "City", "identifier": "jambase:123", "name": "Boston"}]
-    }
-    mock_response.raise_for_status = lambda: None
-
-    with patch(
-        "src.backend.app.clients.jambase_client.httpx.AsyncClient.get",
-        new=AsyncMock(return_value=mock_response),
-    ) as mock_get:
-        city_id = await jambase_client.get_city_id("Boston")
-        assert city_id == "jambase:123"
-        mock_get.assert_awaited_once()
-
-
-def test_jambase_parse_performers():
-    performers = [
+# Full fake event
+FULL_EVENT = {
+    "results": [
         {
-            "@type": "MusicGroup",
-            "name": "Turnstile",
-            "identifier": "jambase:52143",
-            "x-isHeadliner": True,
-        },
-        {
-            "@type": "MusicGroup",
-            "name": "Speed",
-            "identifier": "jambase:6380443",
-            "x-isHeadliner": False,
-        },
-        {
-            "@type": "MusicGroup",
-            "name": "Jane Remover",
-            "identifier": "jambase:9087125",
-            "x-isHeadliner": False,
-        },
-    ]
-    headliner, lineup = concerts.jambase_parse_performers(performers)
-    assert headliner == "Turnstile"
-    assert lineup == ["Turnstile", "Speed", "Jane Remover"]
-
-
-# -------------------- Ticketmaster endpoints --------------------
-
-MOCK_EVENTS = {
-    "totalElements": 1,
-    "page": 0,
-    "size": 1,
-    "data": [
-        {
-            "id": "test123",
-            "name": "Mock Concert",
-            "url": "http://example.com",
-            "startDateTime": "2025-01-01T00:00:00Z",
+            "id": "EVT123",
+            "name": "Rock Fest",
+            "url": "http://example.com/rockfest",
+            "startDateTime": "2025-09-22T20:00:00Z",
             "segment": "Music",
             "genre": "Rock",
             "venue": {
-                "id": "venue1",
-                "name": "Mock Arena",
+                "id": "VEN1",
+                "name": "Big Stadium",
                 "city": "Boston",
                 "country": "US",
-                "lat": 42.36,
-                "lon": -71.05,
             },
-            "priceRanges": [{"currency": "USD", "min": 50.0, "max": 100.0}],
+            "priceRanges": [{"currency": "USD", "min": 50.0, "max": 150.0}],
         }
-    ],
+    ]
 }
 
 
-@pytest.fixture
-def client_fixture():
-    return TestClient(app)
+async def mock_get(self, url, params=None, **kwargs):
+    return MockResponse(FULL_EVENT)
 
-@pytest.mark.skip
-def test_list_concerts(monkeypatch, client_fixture):
-    async def mock_search_events(params):
-        return MOCK_EVENTS
 
-    monkeypatch.setattr(
-        "src.backend.app.clients.ticketmaster_client.TicketmasterClient.search_events",
-        mock_search_events,
+# --- Tests ---
+
+
+@pytest.mark.parametrize("provider", ["jambase", "ticketmaster"])
+def test_search_endpoint_success(monkeypatch, provider):
+    monkeypatch.setattr("httpx.AsyncClient.get", mock_get)
+
+    resp = client.get(
+        "/search",
+        params={
+            "city": "Boston",
+            "start_date": "2025-09-22",
+            "end_date": "2025-09-23",
+            "provider": provider,
+        },
     )
 
-    resp = client_fixture.get("/api/v1/concerts?keyword=rock")
     assert resp.status_code == 200
-    body = resp.json()
-    assert body["totalElements"] == 1
-    assert body["data"][0]["name"] == "Mock Concert"
+    data = resp.json()
+    assert "results" in data
+    event = data["results"][0]
 
-@pytest.mark.skip
-def test_get_concert(monkeypatch, client_fixture):
-    async def mock_get_event(event_id: str):
-        return MOCK_EVENTS["data"][0]
+    # Validate all fields
+    assert event["id"] == "EVT123"
+    assert event["name"] == "Rock Fest"
+    assert event["url"] == "http://example.com/rockfest"
+    assert event["startDateTime"].startswith("2025-09-22")
+    assert event["segment"] == "Music"
+    assert event["genre"] == "Rock"
 
-    monkeypatch.setattr(
-        "src.backend.app.clients.ticketmaster_client.TicketmasterClient.get_event",
-        mock_get_event,
+    assert "venue" in event
+    assert event["venue"]["city"] == "Boston"
+    assert event["venue"]["country"] == "US"
+
+    assert "priceRanges" in event
+    assert event["priceRanges"][0]["min"] == 50.0
+    assert event["priceRanges"][0]["max"] == 150.0
+
+
+def test_search_endpoint_failure(monkeypatch):
+    async def mock_get_fail(self, url, params=None, **kwargs):
+        return MockResponse({"error": "fail"}, status_code=500)
+
+    monkeypatch.setattr("httpx.AsyncClient.get", mock_get_fail)
+
+    resp = client.get(
+        "/search",
+        params={"city": "Boston", "provider": "jambase"},
     )
 
-    resp = client_fixture.get("/api/v1/concerts/test123")
-    assert resp.status_code == 200
-    assert resp.json()["id"] == "test123"
-
-
-# -------------------- Error handling --------------------
-
-
-def test_list_concerts_upstream_error(monkeypatch, client_fixture):
-    async def mock_search_events(params):
-        raise Exception("Mock upstream failure")
-
-    monkeypatch.setattr(
-        "src.backend.app.clients.ticketmaster_client.TicketmasterClient.search_events",
-        mock_search_events,
-    )
-
-    resp = client_fixture.get("/api/v1/concerts?keyword=fail")
     assert resp.status_code == 502
-    assert "Upstream error" in resp.json()["detail"]
-
-
-def test_get_concert_upstream_error(monkeypatch, client_fixture):
-    async def mock_get_event(event_id: str):
-        raise Exception("Mock upstream failure")
-
-    monkeypatch.setattr(
-        "src.backend.app.clients.ticketmaster_client.TicketmasterClient.get_event",
-        mock_get_event,
-    )
-
-    resp = client_fixture.get("/api/v1/concerts/fail123")
-    assert resp.status_code == 502
-    assert "Upstream error" in resp.json()["detail"]
+    assert "Error fetching concert data" in resp.json()["detail"]

@@ -16,5 +16,5 @@ COPY providers/jambase /app
 # Copy backend code
 COPY backend /app/backend
 
-# Each provider exposes its own FastAPI app in main.py
-CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8002"]
+# Each provider exposes its own FastAPI app in jambase_service.py
+CMD ["uvicorn", "jambase_service:app", "--host", "0.0.0.0", "--port", "8002"]
