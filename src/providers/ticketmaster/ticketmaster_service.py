@@ -256,10 +256,25 @@ app = create_app()
 
 def main():
     """Entry point for running the Ticketmaster service directly."""
+    # Default to loopback to avoid accidental binding to all interfaces.
+    host = os.getenv("TM_HOST", "127.0.0.1")
+    port = int(os.getenv("TM_PORT", "8001"))
+
+    # Require an explicit opt-in to bind to all interfaces.
+    if host == "0.0.0.0" and os.getenv("TM_ALLOW_BIND_ALL", "false").lower() not in (
+        "1",
+        "true",
+        "yes",
+    ):
+        logger.warning(
+            "TM_HOST=0.0.0.0 requested but TM_ALLOW_BIND_ALL not enabled. "
+            "Set TM_ALLOW_BIND_ALL=true to confirm binding to all interfaces."
+        )
+
     uvicorn.run(
         "ticketmaster_service:create_app",
-        host="0.0.0.0",
-        port=8001,
+        host=host,
+        port=port,
         reload=True,
         factory=True,
     )
