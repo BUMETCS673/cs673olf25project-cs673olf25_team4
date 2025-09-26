@@ -14,6 +14,8 @@ services:
     environment:
       JAMBASE_API_URL: http://jambase_provider:8002
       JAMBASE_API_KEY: ${JAMBASE_API_KEY}
+      TM_API_SECRET: ${TM_API_SECRET}
+      TM_API_KEY: ${TM_API_KEY}
       # Backend should call providers by service name + container port (both = 8000)
       TM_PROVIDER_URL: http://ticketmaster_provider:8000
       TICKETMASTER_API_URL: http://ticketmaster_provider:8000   # fallback for older code
@@ -29,6 +31,7 @@ services:
       - "8001:8000"   # host:container
     environment:
       TM_API_KEY: ${TM_API_KEY}
+      TM_API_SECRET: ${TM_API_SECRET}
       TM_BASE_URL: ${TM_BASE_URL}
       
   jambase_provider:
