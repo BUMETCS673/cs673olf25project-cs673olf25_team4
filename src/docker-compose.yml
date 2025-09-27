@@ -11,6 +11,9 @@ services:
     depends_on:
       - ticketmaster_provider
       - jambase_provider
+      - groq_provider
+    env_file:
+      - .env
     environment:
       JAMBASE_API_URL: http://jambase_provider:8002
       JAMBASE_API_KEY: ${JAMBASE_API_KEY}
@@ -46,6 +49,20 @@ services:
       - "8002:8000"
     environment:
       JAMBASE_API_KEY: ${JAMBASE_API_KEY} 
+
+  groq_provider:
+    build:
+      context: .
+      dockerfile: providers/groq/Dockerfile
+    container_name: groq_provider
+    command: >
+      uvicorn groq_service:app --host 0.0.0.0 --port 8000
+    ports:
+      - "8003:8000"   # expose on host 8003
+    env_file:
+      - .env
+    environment:
+      GROQ_API_KEY: ${GROQ_API_KEY}
 
   frontend:
     build:
