@@ -12,6 +12,7 @@ jobs:
       JAMBASE_API_KEY: ${{ secrets.JAMBASE_API_KEY }}
       TM_API_SECRET: ${{ secrets.TM_API_SECRET }}
       TM_API_KEY: ${{ secrets.TM_API_KEY }}
+      GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v3
