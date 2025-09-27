@@ -52,6 +52,11 @@ class GroqService:
 
         # Routes
         self.router.add_api_route(
+            "/",
+            self.root,
+            methods=["GET"],
+        )
+        self.router.add_api_route(
             "/get_tokens",
             self.get_tokens,
             methods=["GET"],
@@ -63,6 +68,10 @@ class GroqService:
             methods=["GET"],
             response_model=SummaryResponse,
         )
+
+    async def root(self):
+        """Health check endpoint."""
+        return {"status": "ok", "message": "Groq service is running."}
 
     async def get_tokens(self, user_input: str = Query(...)) -> TokenResponse:
         """
