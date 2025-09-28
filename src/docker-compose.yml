@@ -11,11 +11,13 @@ services:
     depends_on:
       - ticketmaster_provider
       - jambase_provider
+      - groq_provider
     environment:
       JAMBASE_API_URL: http://jambase_provider:8002
       JAMBASE_API_KEY: ${JAMBASE_API_KEY}
       TM_API_SECRET: ${TM_API_SECRET}
       TM_API_KEY: ${TM_API_KEY}
+      GROQ_API_KEY: ${GROQ_API_KEY}
       TM_BASE_URL: https://app.ticketmaster.com/discovery/v2
       # Backend should call providers by service name + container port (both = 8000)
       TM_PROVIDER_URL: http://ticketmaster_provider:8000
@@ -46,6 +48,18 @@ services:
       - "8002:8000"
     environment:
       JAMBASE_API_KEY: ${JAMBASE_API_KEY} 
+
+  groq_provider:
+    build:
+      context: .
+      dockerfile: providers/groq/Dockerfile
+    container_name: groq_provider
+    command: >
+      uvicorn groq_service:app --host 0.0.0.0 --port 8000
+    ports:
+      - "8003:8000"   # expose on host 8003
+    environment:
+      GROQ_API_KEY: ${GROQ_API_KEY}
 
   frontend:
     build:
