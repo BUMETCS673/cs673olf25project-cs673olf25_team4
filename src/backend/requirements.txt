@@ -12,7 +12,10 @@ pydantic[email]>=2.0.0  # Enhanced settings validation and email validation
 pydantic-settings>=2.0.0  # Settings management for Pydantic v2
 cryptography>=41.0.0  # SSL/TLS cryptographic operations
 pyOpenSSL>=23.2.0  # SSL certificate handling
-certifi>=2023.5.7  # CA certificate bundle for HTTPS validation
+certifi>=2024.7.4  # CA certificate bundle for HTTPS validation (CVE-2024-39689)
+idna>=3.7  # Internationalized domain names (CVE-2024-3651)
+urllib3>=2.5.0  # HTTP client library (CVE-2025-50181, CVE-2025-50182, CVE-2024-37891)
+requests>=2.32.4  # HTTP library (CVE-2024-47081, CVE-2024-35195)
 
 # Security Headers and Validation
 secure>=0.3.0  # Security headers middleware

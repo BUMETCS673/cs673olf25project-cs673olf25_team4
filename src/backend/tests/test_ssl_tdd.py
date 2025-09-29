@@ -10,8 +10,7 @@ These tests follow TDD principles:
 
 import pytest
 import os
-from unittest.mock import patch, MagicMock, mock_open
-from pathlib import Path
+from unittest.mock import patch, MagicMock
 from fastapi.testclient import TestClient
 
 from app.core.ssl_settings import SSLSettings
@@ -19,7 +18,7 @@ from app.core.middleware import (
     HTTPSRedirectMiddleware,
     SecurityHeadersMiddleware,
     RequestLoggingMiddleware,
-    RateLimitingMiddleware
+    RateLimitingMiddleware,
 )
 from app.main import create_app
 
@@ -43,11 +42,11 @@ class TestSSLSettingsUnit:
         """Test: SSL should be properly configured for production."""
         # RED: Test production-specific configuration
         production_env = {
-            'ENVIRONMENT': 'production',
-            'SSL_ENABLED': 'true',
-            'FORCE_HTTPS': 'true',
-            'HSTS_ENABLED': 'true',
-            'HSTS_PRELOAD': 'true'
+            "ENVIRONMENT": "production",
+            "SSL_ENABLED": "true",
+            "FORCE_HTTPS": "true",
+            "HSTS_ENABLED": "true",
+            "HSTS_PRELOAD": "true",
         }
 
         with patch.dict(os.environ, production_env):
@@ -62,17 +61,20 @@ class TestSSLSettingsUnit:
     def test_ssl_certificate_path_validation(self):
         """Test: SSL certificate paths should be validated."""
         # RED: Test that certificate validation works
-        with patch.dict(os.environ, {
-            'SSL_ENABLED': 'true',
-            'SSL_CERT_PATH': '/nonexistent/cert.pem',
-            'SSL_KEY_PATH': '/nonexistent/key.pem'
-        }):
-            with patch('app.core.ssl_settings.logger') as mock_logger:
+        with patch.dict(
+            os.environ,
+            {
+                "SSL_ENABLED": "true",
+                "SSL_CERT_PATH": "/nonexistent/cert.pem",
+                "SSL_KEY_PATH": "/nonexistent/key.pem",
+            },
+        ):
+            with patch("app.core.ssl_settings.logger") as mock_logger:
                 settings = SSLSettings()
 
                 # Should warn about missing files but not fail
                 mock_logger.warning.assert_called()
-                assert settings.ssl_cert_path == '/nonexistent/cert.pem'
+                assert settings.ssl_cert_path == "/nonexistent/cert.pem"
 
     def test_hsts_header_generation(self):
         """Test: HSTS headers should be properly formatted."""
@@ -81,7 +83,7 @@ class TestSSLSettingsUnit:
             hsts_enabled=True,
             hsts_max_age=31536000,
             hsts_include_subdomains=True,
-            hsts_preload=True
+            hsts_preload=True,
         )
 
         header = settings.get_hsts_header()
@@ -107,25 +109,32 @@ class TestSSLSettingsUnit:
         # RED: Test environment-specific CORS filtering
         dev_settings = SSLSettings(
             environment="development",
-            cors_origins="http://localhost:3000,https://localhost:3000,https://beatmap.live"
+            cors_origins=(
+                "http://localhost:3000,https://localhost:3000," "https://beatmap.live"
+            ),
         )
 
         prod_settings = SSLSettings(
             environment="production",
-            cors_origins="http://localhost:3000,https://localhost:3000,https://beatmap.live"
+            cors_origins=(
+                "http://localhost:3000,https://localhost:3000," "https://beatmap.live"
+            ),
         )
 
         dev_origins = dev_settings.get_cors_origins()
         prod_origins = prod_settings.get_cors_origins()
 
         # Development should include localhost
-        assert any('localhost' in origin for origin in dev_origins)
+        assert any("localhost" in origin for origin in dev_origins)
 
         # Production should only include secure origins
         for origin in prod_origins:
-            if not origin.startswith(('https://', 'wss://')):
+            if not origin.startswith(("https://", "wss://")):
                 # Allow localhost only in development
-                assert 'localhost' not in origin or dev_settings.environment == 'development'
+                assert (
+                    "localhost" not in origin
+                    or dev_settings.environment == "development"
+                )
 
     def test_ssl_context_kwargs_generation(self):
         """Test: SSL context kwargs should be properly formatted for uvicorn."""
@@ -133,7 +142,7 @@ class TestSSLSettingsUnit:
         settings = SSLSettings(
             ssl_enabled=True,
             ssl_cert_path="/path/to/cert.pem",
-            ssl_key_path="/path/to/key.pem"
+            ssl_key_path="/path/to/key.pem",
         )
 
         kwargs = settings.get_ssl_context_kwargs()
@@ -147,19 +156,19 @@ class TestSSLSettingsUnit:
         """Test: Boolean values should be parsed correctly from env vars."""
         # RED: Test various boolean representations
         test_cases = [
-            ('true', True),
-            ('True', True),
-            ('TRUE', True),
-            ('1', True),
-            ('false', False),
-            ('False', False),
-            ('FALSE', False),
-            ('0', False),
-            ('', False),
+            ("true", True),
+            ("True", True),
+            ("TRUE", True),
+            ("1", True),
+            ("false", False),
+            ("False", False),
+            ("FALSE", False),
+            ("0", False),
+            ("", False),
         ]
 
         for env_value, expected in test_cases:
-            with patch.dict(os.environ, {'SSL_ENABLED': env_value}):
+            with patch.dict(os.environ, {"SSL_ENABLED": env_value}):
                 settings = SSLSettings()
                 assert settings.ssl_enabled == expected
 
@@ -167,15 +176,15 @@ class TestSSLSettingsUnit:
         """Test: Environment-specific settings should override defaults properly."""
         # RED: Test settings inheritance and override behavior
         base_env = {
-            'ENVIRONMENT': 'staging',
-            'SSL_ENABLED': 'true',
-            'HSTS_ENABLED': 'true'
+            "ENVIRONMENT": "staging",
+            "SSL_ENABLED": "true",
+            "HSTS_ENABLED": "true",
         }
 
         with patch.dict(os.environ, base_env):
             settings = SSLSettings()
 
-            assert settings.environment == 'staging'
+            assert settings.environment == "staging"
             assert settings.ssl_enabled
             assert settings.hsts_enabled
             # Staging should have reasonable defaults between dev and prod
@@ -184,11 +193,14 @@ class TestSSLSettingsUnit:
     def test_settings_validation_edge_cases(self):
         """Test: Settings should handle edge cases gracefully."""
         # RED: Test edge cases and error conditions
-        with patch.dict(os.environ, {
-            'HSTS_MAX_AGE': 'invalid_number',
-            'SSL_ENABLED': 'maybe',  # Invalid boolean
-            'ENVIRONMENT': '',  # Empty environment
-        }):
+        with patch.dict(
+            os.environ,
+            {
+                "HSTS_MAX_AGE": "invalid_number",
+                "SSL_ENABLED": "maybe",  # Invalid boolean
+                "ENVIRONMENT": "",  # Empty environment
+            },
+        ):
             # Should not raise exception, should use defaults
             settings = SSLSettings()
 
@@ -218,7 +230,7 @@ class TestSecurityMiddlewareUnit:
 
         # This would need to test the actual middleware dispatch method
         # For unit testing, we'd test the header generation logic
-        assert ssl_settings.csp_enabled
+        assert middleware.ssl_settings.csp_enabled
         assert ssl_settings.hsts_enabled
 
     def test_rate_limiting_middleware_configuration(self):
@@ -247,12 +259,12 @@ class TestSSLIntegration:
     def ssl_test_env(self):
         """SSL test environment fixture."""
         return {
-            'ENVIRONMENT': 'test',
-            'SSL_ENABLED': 'false',  # Disabled for testing
-            'FORCE_HTTPS': 'false',
-            'HSTS_ENABLED': 'false',
-            'CSP_ENABLED': 'true',
-            'CORS_ORIGINS': 'https://localhost:3000,http://localhost:3000'
+            "ENVIRONMENT": "test",
+            "SSL_ENABLED": "false",  # Disabled for testing
+            "FORCE_HTTPS": "false",
+            "HSTS_ENABLED": "false",
+            "CSP_ENABLED": "true",
+            "CORS_ORIGINS": "https://localhost:3000,http://localhost:3000",
         }
 
     def test_app_creation_with_ssl_disabled(self, ssl_test_env):
@@ -265,11 +277,9 @@ class TestSSLIntegration:
     def test_app_creation_with_ssl_enabled(self, ssl_test_env):
         """Test: App should create successfully with SSL enabled."""
         # RED: Test app creation with SSL
-        ssl_test_env.update({
-            'SSL_ENABLED': 'true',
-            'FORCE_HTTPS': 'true',
-            'HSTS_ENABLED': 'true'
-        })
+        ssl_test_env.update(
+            {"SSL_ENABLED": "true", "FORCE_HTTPS": "true", "HSTS_ENABLED": "true"}
+        )
 
         with patch.dict(os.environ, ssl_test_env):
             app = create_app()
@@ -278,10 +288,7 @@ class TestSSLIntegration:
     def test_health_endpoint_bypasses_https_redirect(self, ssl_test_env):
         """Test: Health endpoint should bypass HTTPS redirect."""
         # RED: Test health endpoint behavior
-        ssl_test_env.update({
-            'ENVIRONMENT': 'production',
-            'FORCE_HTTPS': 'true'
-        })
+        ssl_test_env.update({"ENVIRONMENT": "production", "FORCE_HTTPS": "true"})
 
         with patch.dict(os.environ, ssl_test_env):
             app = create_app()
@@ -295,10 +302,7 @@ class TestSSLIntegration:
     def test_api_endpoint_redirects_to_https_in_production(self, ssl_test_env):
         """Test: API endpoints should redirect to HTTPS in production."""
         # RED: Test HTTPS redirection
-        ssl_test_env.update({
-            'ENVIRONMENT': 'production',
-            'FORCE_HTTPS': 'true'
-        })
+        ssl_test_env.update({"ENVIRONMENT": "production", "FORCE_HTTPS": "true"})
 
         with patch.dict(os.environ, ssl_test_env):
             app = create_app()
@@ -308,15 +312,13 @@ class TestSSLIntegration:
 
             # Should redirect to HTTPS
             assert response.status_code in [301, 302, 307, 308]
-            if 'location' in response.headers:
-                assert response.headers['location'].startswith('https://')
+            if "location" in response.headers:
+                assert response.headers["location"].startswith("https://")
 
     def test_security_headers_present_in_responses(self, ssl_test_env):
         """Test: Security headers should be present in all responses."""
         # RED: Test security headers
-        ssl_test_env.update({
-            'CSP_ENABLED': 'true'
-        })
+        ssl_test_env.update({"CSP_ENABLED": "true"})
 
         with patch.dict(os.environ, ssl_test_env):
             app = create_app()
@@ -335,40 +337,54 @@ class TestSSLErrorHandling:
     def test_missing_certificate_files_handled_gracefully(self):
         """Test: Missing certificate files should be handled gracefully."""
         # RED: Test error handling for missing files
-        with patch.dict(os.environ, {
-            'SSL_ENABLED': 'true',
-            'SSL_CERT_PATH': '/nonexistent/cert.pem',
-            'SSL_KEY_PATH': '/nonexistent/key.pem'
-        }):
-            with patch('app.core.ssl_settings.logger') as mock_logger:
+        with patch.dict(
+            os.environ,
+            {
+                "SSL_ENABLED": "true",
+                "SSL_CERT_PATH": "/nonexistent/cert.pem",
+                "SSL_KEY_PATH": "/nonexistent/key.pem",
+            },
+        ):
+            with patch("app.core.ssl_settings.logger") as mock_logger:
                 settings = SSLSettings()
 
                 # Should log warning but not crash
                 mock_logger.warning.assert_called()
-                assert settings.ssl_cert_path == '/nonexistent/cert.pem'
+                assert settings.ssl_cert_path == "/nonexistent/cert.pem"
 
     def test_invalid_environment_variables_handled(self):
         """Test: Invalid environment variables should use safe defaults."""
         # RED: Test handling of invalid env vars
-        with patch.dict(os.environ, {
-            'SSL_ENABLED': 'not_a_boolean',
-            'HSTS_MAX_AGE': 'not_a_number',
-            'ENVIRONMENT': '   ',  # Whitespace only
-        }):
+        with patch.dict(
+            os.environ,
+            {
+                "SSL_ENABLED": "not_a_boolean",
+                "HSTS_MAX_AGE": "not_a_number",
+                "ENVIRONMENT": "   ",  # Whitespace only
+            },
+        ):
             settings = SSLSettings()
 
             # Should not crash and should use safe defaults
             assert isinstance(settings.ssl_enabled, bool)
             assert isinstance(settings.hsts_max_age, int)
             assert settings.hsts_max_age > 0
-            assert settings.environment in ['development', 'staging', 'production', 'test']
+            assert settings.environment in [
+                "development",
+                "staging",
+                "production",
+                "test",
+            ]
 
     def test_empty_cors_origins_handled(self):
         """Test: Empty CORS origins should be handled properly."""
         # RED: Test empty CORS origins
-        with patch.dict(os.environ, {
-            'CORS_ORIGINS': '',  # Empty
-        }):
+        with patch.dict(
+            os.environ,
+            {
+                "CORS_ORIGINS": "",  # Empty
+            },
+        ):
             settings = SSLSettings()
             origins = settings.get_cors_origins()
 
@@ -378,16 +394,22 @@ class TestSSLErrorHandling:
     def test_malformed_cors_origins_filtered(self):
         """Test: Malformed CORS origins should be filtered out."""
         # RED: Test malformed CORS origins
-        with patch.dict(os.environ, {
-            'CORS_ORIGINS': 'not-a-url,https://valid.com,ftp://invalid.com,https://another-valid.com',
-        }):
+        with patch.dict(
+            os.environ,
+            {
+                "CORS_ORIGINS": (
+                    "not-a-url,https://valid.com,ftp://invalid.com,"
+                    "https://another-valid.com"
+                ),
+            },
+        ):
             settings = SSLSettings()
             origins = settings.get_cors_origins()
 
             # Should only include valid HTTP/HTTPS origins
             for origin in origins:
-                assert origin.startswith(('http://', 'https://', 'ws://', 'wss://'))
+                assert origin.startswith(("http://", "https://", "ws://", "wss://"))
 
 
-if __name__ == '__main__':
-    pytest.main([__file__, '-v'])
+if __name__ == "__main__":
+    pytest.main([__file__, "-v"])

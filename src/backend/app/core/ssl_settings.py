@@ -8,11 +8,10 @@ Provides comprehensive SSL configuration including:
 - Environment-aware SSL configuration
 """
 
-import os
 from pathlib import Path
-from typing import Optional, Dict, Any, List
+from typing import Optional, Dict, Any, List, Union
 from pydantic import Field, field_validator, ConfigDict
-from pydantic_settings import BaseSettings
+from pydantic_settings import BaseSettings, SettingsConfigDict
 import logging
 
 logger = logging.getLogger(__name__)
@@ -22,10 +21,7 @@ class SSLSettings(BaseSettings):
     """SSL/TLS configuration settings for the BeatMap backend."""
 
     model_config = ConfigDict(
-        env_file=".env",
-        env_file_encoding="utf-8",
-        case_sensitive=False,
-        extra="ignore"
+        env_file=".env", env_file_encoding="utf-8", case_sensitive=False, extra="ignore"
     )
 
     # Environment
@@ -63,10 +59,12 @@ class SSLSettings(BaseSettings):
     permissions_policy_enabled: bool = Field(default=True)
 
     # CORS Configuration
-    cors_origins: List[str] = Field(default=["http://localhost:3000"])
+    cors_origins: Union[str, List[str]] = Field(default=["http://localhost:3000"])
     cors_credentials: bool = Field(default=True)
-    cors_methods: List[str] = Field(default=["GET", "POST", "PUT", "DELETE", "OPTIONS"])
-    cors_headers: List[str] = Field(default=["*"])
+    cors_methods: Union[str, List[str]] = Field(
+        default=["GET", "POST", "PUT", "DELETE", "OPTIONS"]
+    )
+    cors_headers: Union[str, List[str]] = Field(default=["*"])
 
     # Server Configuration
     server_name: str = Field(default="BeatMap")
@@ -79,21 +77,33 @@ class SSLSettings(BaseSettings):
             logger.warning(f"SSL file path does not exist: {v}")
         return v
 
-    @field_validator("cors_origins", mode="before")
+    @field_validator("cors_origins", "cors_methods", "cors_headers", mode="before")
     @classmethod
-    def parse_cors_origins(cls, v):
-        """Parse CORS origins from string or list."""
+    def parse_cors_lists(cls, v):
+        """Parse CORS configuration from string or list."""
         if isinstance(v, str):
-            return [origin.strip() for origin in v.split(",") if origin.strip()]
-        return v
+            return [item.strip() for item in v.split(",") if item.strip()]
+        if isinstance(v, list):
+            return v
+        return [str(v)]
 
-    @field_validator("csp_default_src", "csp_script_src", "csp_style_src", "csp_connect_src", mode="before")
+    @field_validator(
+        "csp_default_src",
+        "csp_script_src",
+        "csp_style_src",
+        "csp_connect_src",
+        mode="before",
+    )
     @classmethod
     def parse_csp_directives(cls, v):
         """Parse CSP directives from string or list."""
         if isinstance(v, str):
-            return [directive.strip() for directive in v.split(",") if directive.strip()]
-        return v
+            return [
+                directive.strip() for directive in v.split(",") if directive.strip()
+            ]
+        if isinstance(v, list):
+            return v
+        return [str(v)]
 
     def get_ssl_context_kwargs(self) -> Optional[Dict[str, Any]]:
         """Get SSL context configuration for uvicorn."""
@@ -162,7 +172,7 @@ class SSLSettings(BaseSettings):
             "usb=()",
             "magnetometer=()",
             "gyroscope=()",
-            "accelerometer=()"
+            "accelerometer=()",
         ]
 
         return ", ".join(policies)
@@ -171,11 +181,19 @@ class SSLSettings(BaseSettings):
         """Get CORS origins filtered by environment."""
         if self.environment == "production":
             # Production should only allow HTTPS origins
-            return [origin for origin in self.cors_origins if origin.startswith("https://")]
+            return [
+                origin for origin in self.cors_origins if origin.startswith("https://")
+            ]
         elif self.environment == "staging":
             # Staging allows both HTTP and HTTPS but filters localhost
-            return [origin for origin in self.cors_origins
-                   if not (origin.startswith("http://localhost") or origin.startswith("http://127.0.0.1"))]
+            return [
+                origin
+                for origin in self.cors_origins
+                if not (
+                    origin.startswith("http://localhost")
+                    or origin.startswith("http://127.0.0.1")
+                )
+            ]
         else:
             # Development allows all configured origins
             return self.cors_origins
@@ -189,7 +207,10 @@ class SSLSettings(BaseSettings):
         return self.environment.lower() in ["production", "prod"]
 
     def should_enforce_https(self) -> bool:
-        """Determine if HTTPS should be enforced based on environment and SSL settings."""
+        """
+        Determine if HTTPS should be enforced based on environment
+        and SSL settings.
+        """
         return self.ssl_enabled and self.force_https and not self.is_development()
 
     def log_configuration(self) -> None:

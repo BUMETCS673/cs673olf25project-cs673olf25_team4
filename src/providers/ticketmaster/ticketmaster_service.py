@@ -263,7 +263,7 @@ def main():
     allow_all = os.getenv("TM_ALLOW_BIND_ALL", "false").lower() in ("1", "true", "yes")
 
     # Fail safe: don’t bind to all interfaces unless explicitly allowed
-    if not allow_all and host in ("0.0.0.0", "::"): # nosec B104
+    if not allow_all and host in ("0.0.0.0", "::"):  # nosec B104
         logger.warning(
             "Binding to '%s' (all interfaces) is disabled by default. "
             "Set TM_ALLOW_BIND_ALL=true to override. "
@@ -279,7 +279,6 @@ def main():
         reload=True,
         factory=True,
     )
-
 
 
 if __name__ == "__main__":

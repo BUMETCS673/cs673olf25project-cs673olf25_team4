@@ -8,8 +8,7 @@ import pytest
 import os
 import tempfile
 from fastapi.testclient import TestClient
-from unittest.mock import patch, MagicMock
-from pathlib import Path
+from unittest.mock import patch
 
 from app.main import create_app
 from app.core.ssl_settings import SSLSettings
@@ -73,7 +72,7 @@ class TestSSLSettings:
             hsts_enabled=True,
             hsts_max_age=31536000,
             hsts_include_subdomains=True,
-            hsts_preload=True
+            hsts_preload=True,
         )
 
         header = settings.get_hsts_header()
@@ -87,7 +86,7 @@ class TestSSLSettings:
             csp_enabled=True,
             csp_default_src=["'self'"],
             csp_script_src=["'self'", "'unsafe-inline'"],
-            csp_style_src=["'self'", "'unsafe-inline'"]
+            csp_style_src=["'self'", "'unsafe-inline'"],
         )
 
         header = settings.get_csp_header()
@@ -104,22 +103,37 @@ class TestSSLSettings:
         assert settings.get_ssl_context_kwargs() is None
 
         # Test with SSL enabled but no paths
-        settings = SSLSettings(ssl_enabled=True)
+        settings = SSLSettings(ssl_enabled=True, ssl_cert_path=None, ssl_key_path=None)
         assert settings.get_ssl_context_kwargs() is None
 
         # Test with SSL enabled and valid paths
+        # Create temporary certificate files for testing
         test_cert_path = os.path.join(temp_dir, "test_cert.pem")
         test_key_path = os.path.join(temp_dir, "test_key.pem")
-        settings = SSLSettings(
-            ssl_enabled=True,
-            ssl_cert_path=test_cert_path,
-            ssl_key_path=test_key_path
-        )
 
-        kwargs = settings.get_ssl_context_kwargs()
-        assert kwargs is not None
-        assert kwargs["ssl_certfile"] == test_cert_path
-        assert kwargs["ssl_keyfile"] == test_key_path
+        # Create empty temp files to pass existence check
+        with open(test_cert_path, "w") as f:
+            f.write("test cert")
+        with open(test_key_path, "w") as f:
+            f.write("test key")
+
+        try:
+            settings = SSLSettings(
+                ssl_enabled=True,
+                ssl_cert_path=test_cert_path,
+                ssl_key_path=test_key_path,
+            )
+
+            kwargs = settings.get_ssl_context_kwargs()
+            assert kwargs is not None
+            assert kwargs["ssl_certfile"] == test_cert_path
+            assert kwargs["ssl_keyfile"] == test_key_path
+        finally:
+            # Clean up temp files
+            if os.path.exists(test_cert_path):
+                os.remove(test_cert_path)
+            if os.path.exists(test_key_path):
+                os.remove(test_key_path)
 
 
 class TestSecurityMiddleware:
@@ -162,25 +176,29 @@ class TestSecurityMiddleware:
     def test_cors_configuration(self, client_with_ssl):
         """Test CORS is properly configured."""
         # Test preflight request
-        response = client_with_ssl.options("/health", headers={
-            "Origin": "https://localhost:3000",
-            "Access-Control-Request-Method": "GET"
-        })
+        response = client_with_ssl.options(
+            "/health",
+            headers={
+                "Origin": "https://localhost:3000",
+                "Access-Control-Request-Method": "GET",
+            },
+        )
 
         # CORS headers should be present
         assert "Access-Control-Allow-Origin" in response.headers
         assert "Access-Control-Allow-Credentials" in response.headers
 
-    @pytest.mark.parametrize("origin", [
-        "https://localhost:3000",
-        "http://localhost:3000",
-        "https://evil.com"
-    ])
+    @pytest.mark.parametrize(
+        "origin",
+        ["https://localhost:3000", "http://localhost:3000", "https://evil.com"],
+    )
     def test_cors_origin_validation(self, client_with_ssl, origin):
         """Test CORS origin validation."""
         response = client_with_ssl.get("/health", headers={"Origin": origin})
 
-        if origin.startswith("https://localhost") or origin.startswith("http://localhost"):
+        if origin.startswith("https://localhost") or origin.startswith(
+            "http://localhost"
+        ):
             # Should be allowed
             assert response.status_code == 200
         # Note: CORS validation happens at browser level, not server level
@@ -224,9 +242,9 @@ class TestHTTPSRedirection:
         client = TestClient(app)
 
         # Simulate HTTP request
-        response = client.get("/health", allow_redirects=False, headers={
-            "Host": "testbeatmap.com"
-        })
+        response = client.get(
+            "/health", allow_redirects=False, headers={"Host": "testbeatmap.com"}
+        )
 
         # Should redirect to HTTPS (or process normally in test environment)
         # Note: TestClient doesn't perfectly simulate HTTP vs HTTPS
@@ -259,16 +277,19 @@ class TestRateLimiting:
 class TestEnvironmentSpecificConfiguration:
     """Test environment-specific SSL configurations."""
 
-    @pytest.mark.parametrize("environment,expected_hsts", [
-        ("development", False),
-        ("staging", True),
-        ("production", True),
-    ])
+    @pytest.mark.parametrize(
+        "environment,expected_hsts",
+        [
+            ("development", False),
+            ("staging", True),
+            ("production", True),
+        ],
+    )
     def test_environment_hsts_configuration(self, environment, expected_hsts):
         """Test HSTS is configured correctly per environment."""
         env_vars = {
             "ENVIRONMENT": environment,
-            "HSTS_ENABLED": str(expected_hsts).lower()
+            "HSTS_ENABLED": str(expected_hsts).lower(),
         }
 
         with patch.dict(os.environ, env_vars):
@@ -277,10 +298,13 @@ class TestEnvironmentSpecificConfiguration:
 
     def test_production_cors_origins_https_only(self):
         """Test production environment only allows HTTPS CORS origins."""
-        with patch.dict(os.environ, {
-            "ENVIRONMENT": "production",
-            "CORS_ORIGINS": "https://beatmap.live,http://insecure.com"
-        }):
+        with patch.dict(
+            os.environ,
+            {
+                "ENVIRONMENT": "production",
+                "CORS_ORIGINS": "https://beatmap.live,http://insecure.com",
+            },
+        ):
             settings = SSLSettings()
             origins = settings.get_environment_cors_origins()
 

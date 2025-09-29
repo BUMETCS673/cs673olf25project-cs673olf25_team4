@@ -38,16 +38,20 @@ class HTTPSRedirectMiddleware(BaseHTTPMiddleware):
 
         # Check if request is already HTTPS
         is_https = (
-            request.url.scheme == "https" or
-            request.headers.get("x-forwarded-proto") == "https" or
-            request.headers.get("x-forwarded-ssl") == "on"
+            request.url.scheme == "https"
+            or request.headers.get("x-forwarded-proto") == "https"
+            or request.headers.get("x-forwarded-ssl") == "on"
         )
 
         if not is_https:
             # Construct HTTPS URL
             https_url = request.url.replace(
                 scheme="https",
-                port=self.ssl_settings.https_port if self.ssl_settings.https_port != 443 else None
+                port=(
+                    self.ssl_settings.https_port
+                    if self.ssl_settings.https_port != 443
+                    else None
+                ),
             )
             logger.info(f"Redirecting HTTP to HTTPS: {request.url} -> {https_url}")
             return RedirectResponse(url=str(https_url), status_code=301)
@@ -69,9 +73,9 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
         # Add HSTS header for HTTPS requests
         if self.ssl_settings.ssl_enabled and self.ssl_settings.hsts_enabled:
             is_https = (
-                request.url.scheme == "https" or
-                request.headers.get("x-forwarded-proto") == "https" or
-                request.headers.get("x-forwarded-ssl") == "on"
+                request.url.scheme == "https"
+                or request.headers.get("x-forwarded-proto") == "https"
+                or request.headers.get("x-forwarded-ssl") == "on"
             )
 
             if is_https:
@@ -114,8 +118,9 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
         response.headers["X-Permitted-Cross-Domain-Policies"] = "none"
         response.headers["X-DNS-Prefetch-Control"] = "off"
 
-        # Remove server identification headers
-        response.headers.pop("Server", None)
+        # Remove server identification headers and replace with custom
+        if "Server" in response.headers:
+            del response.headers["Server"]
         response.headers["Server"] = "BeatMap"
 
         return response
@@ -134,9 +139,9 @@ class RequestLoggingMiddleware(BaseHTTPMiddleware):
         client_ip = self.get_client_ip(request)
         user_agent = request.headers.get("user-agent", "Unknown")
         is_https = (
-            request.url.scheme == "https" or
-            request.headers.get("x-forwarded-proto") == "https" or
-            request.headers.get("x-forwarded-ssl") == "on"
+            request.url.scheme == "https"
+            or request.headers.get("x-forwarded-proto") == "https"
+            or request.headers.get("x-forwarded-ssl") == "on"
         )
 
         # Log request start
@@ -152,8 +157,8 @@ class RequestLoggingMiddleware(BaseHTTPMiddleware):
 
             # Log response status
             logger.info(
-                f"Response: {response.status_code} for {request.method} {request.url.path} "
-                f"to {client_ip}"
+                f"Response: {response.status_code} for "
+                f"{request.method} {request.url.path} to {client_ip}"
             )
 
             return response
@@ -189,7 +194,9 @@ class RequestLoggingMiddleware(BaseHTTPMiddleware):
 class RateLimitingMiddleware(BaseHTTPMiddleware):
     """Basic rate limiting middleware for security."""
 
-    def __init__(self, app: ASGIApp, ssl_settings: SSLSettings, requests_per_minute: int = 100):
+    def __init__(
+        self, app: ASGIApp, ssl_settings: SSLSettings, requests_per_minute: int = 100
+    ):
         super().__init__(app)
         self.ssl_settings = ssl_settings
         self.requests_per_minute = requests_per_minute
@@ -218,8 +225,7 @@ class RateLimitingMiddleware(BaseHTTPMiddleware):
             if self.request_counts[key] >= self.requests_per_minute:
                 logger.warning(f"Rate limit exceeded for {client_ip}")
                 raise HTTPException(
-                    status_code=429,
-                    detail="Too many requests. Please try again later."
+                    status_code=429, detail="Too many requests. Please try again later."
                 )
             self.request_counts[key] += 1
         else:
@@ -244,7 +250,8 @@ class RateLimitingMiddleware(BaseHTTPMiddleware):
         """Remove old rate limiting entries."""
         current_minute = current_time // 60
         keys_to_remove = [
-            key for key in self.request_counts.keys()
+            key
+            for key in self.request_counts.keys()
             if int(key.split(":")[1]) < current_minute - 1
         ]
         for key in keys_to_remove:

@@ -68,27 +68,32 @@ def create_app() -> FastAPI:
     @app.get("/health")
     async def health_check(request: Request):
         """Health check endpoint for load balancers and monitoring."""
-        return JSONResponse({
-            "status": "healthy",
-            "environment": ENVIRONMENT,
-            "version": APP_VERSION,
-            "ssl_enabled": ssl_settings.ssl_enabled,
-            "timestamp": __import__("datetime").datetime.utcnow().isoformat()
-        })
+        return JSONResponse(
+            {
+                "status": "healthy",
+                "environment": ENVIRONMENT,
+                "version": APP_VERSION,
+                "ssl_enabled": ssl_settings.ssl_enabled,
+                "timestamp": __import__("datetime").datetime.utcnow().isoformat(),
+            }
+        )
 
     # SSL configuration info endpoint (development only)
     if DEBUG:
+
         @app.get("/ssl-info")
         async def ssl_info():
             """SSL configuration information (development only)."""
-            return JSONResponse({
-                "ssl_enabled": ssl_settings.ssl_enabled,
-                "ssl_port": ssl_settings.ssl_port,
-                "force_https": ssl_settings.force_https,
-                "hsts_enabled": ssl_settings.hsts_enabled,
-                "environment": ssl_settings.environment,
-                "cors_origins": cors_origins,
-            })
+            return JSONResponse(
+                {
+                    "ssl_enabled": ssl_settings.ssl_enabled,
+                    "ssl_port": ssl_settings.ssl_port,
+                    "force_https": ssl_settings.force_https,
+                    "hsts_enabled": ssl_settings.hsts_enabled,
+                    "environment": ssl_settings.environment,
+                    "cors_origins": cors_origins,
+                }
+            )
 
     # Register ConcertsService
     concerts_service = ConcertsService()
@@ -139,7 +144,7 @@ def main():
     if ssl_config:
         uvicorn_config.update(ssl_config)
 
-    logger.info(f"Starting BeatMap backend server:")
+    logger.info("Starting BeatMap backend server:")
     logger.info(f"  Host: {host}")
     logger.info(f"  Port: {port}")
     logger.info(f"  Environment: {ENVIRONMENT}")
@@ -151,7 +156,9 @@ def main():
     except Exception as e:
         logger.error(f"Failed to start server: {e}")
         if ssl_settings.ssl_enabled:
-            logger.error("If SSL is enabled, ensure certificate files exist and are readable")
+            logger.error(
+                "If SSL is enabled, ensure certificate files exist and are readable"
+            )
         raise
 
 
