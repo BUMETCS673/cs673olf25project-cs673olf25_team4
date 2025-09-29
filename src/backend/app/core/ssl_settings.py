@@ -11,7 +11,7 @@ Provides comprehensive SSL configuration including:
 from pathlib import Path
 from typing import Optional, Dict, Any, List, Union
 from pydantic import Field, field_validator, ConfigDict
-from pydantic_settings import BaseSettings, SettingsConfigDict
+from pydantic_settings import BaseSettings
 import logging
 
 logger = logging.getLogger(__name__)
