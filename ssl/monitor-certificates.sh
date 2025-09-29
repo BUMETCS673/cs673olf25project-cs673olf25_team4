@@ -11,7 +11,7 @@ set -euo pipefail
 TESTBEATMAP_CERT="/app/ssl/testbeatmap/server.crt"
 PRODUCTION_CERT="/app/ssl/production/server.crt"
 ALERT_DAYS=${ALERT_DAYS:-30}  # Alert when cert expires in N days
-LOG_FILE="/var/log/cert-monitoring.log"
+LOG_FILE="${LOG_FILE:-/var/log/cert-monitoring.log}"
 
 # Colors
 RED='\033[0;31m'

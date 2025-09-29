@@ -13,7 +13,7 @@ set -euo pipefail
 ENVIRONMENT="${1:-auto}"
 RESTART_SERVICES=false
 BACKUP_CERTS=false
-LOG_FILE="/var/log/cert-deployment.log"
+LOG_FILE="${LOG_FILE:-/var/log/cert-deployment.log}"
 
 # Colors
 RED='\033[0;31m'
@@ -98,7 +98,7 @@ detect_environment() {
     fi
 
     # Check for development certificates
-    if [[ -f "/app/ssl/dev/server.crt" ]]; then
+    if [[ -f "ssl/dev/server.crt" ]]; then
         ENVIRONMENT="development"
         info "Detected development environment"
         return 0
@@ -125,7 +125,7 @@ get_environment_config() {
             ;;
         "development")
             DOMAIN="localhost"
-            CERT_DIR="/app/ssl/dev"
+            CERT_DIR="ssl/dev"
             NGINX_CONFIG="/etc/nginx/sites-available/default"
             DOCKER_COMPOSE_FILE="/Users/michaellaszlo/Desktop/BU Academics/CSE673_Software_Engineering/cs673olf25project-cs673olf25_team4/src/docker-compose.yml"
             ;;
@@ -195,7 +195,7 @@ validate_certificates() {
 
     # Check if certificate and key match
     local cert_hash=$(openssl x509 -in "$cert_file" -pubkey -noout | openssl md5)
-    local key_hash=$(openssl rsa -in "$key_file" -pubout -noout | openssl md5)
+    local key_hash=$(openssl rsa -in "$key_file" -pubout 2>/dev/null | openssl md5)
 
     if [[ "$cert_hash" != "$key_hash" ]]; then
         error "Certificate and private key do not match"
