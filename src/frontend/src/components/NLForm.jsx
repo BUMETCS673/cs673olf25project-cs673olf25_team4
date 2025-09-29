@@ -1,14 +1,22 @@
 import { useNavigate } from "react-router-dom";
+import { useState } from "react";
 
-// NLForm: collects a natural language query and navigates to /results
-// Later, this will include the query in the URL for backend processing
 function NLForm() {
   const navigate = useNavigate();
+  const [query, setQuery] = useState("");
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    // Pass search params here
-    navigate('/results');
+
+    const mock = {
+      results: [
+        { artist: "Taylor Swift", date: "2025-10-05", venue: "TD Garden", city: "Boston" },
+        { artist: "Coldplay", date: "2025-10-06", venue: "Fenway Park", city: "Boston" }
+      ],
+      summary: "Top pick: Taylor Swift at TD Garden on Oct 5."
+    };
+
+    navigate('/results', { state: { query, results: mock.results, summary: mock.summary } });
   };
 
   return (
@@ -17,6 +25,8 @@ function NLForm() {
       <textarea
         id="nlq"
         name="nlq"
+        value={query}
+        onChange={(e) => setQuery(e.target.value)}
         placeholder="e.g. Show me jazz concerts in NYC this weekend"
       />
       <button className="btn" type="submit">Ask AI Agent</button>
