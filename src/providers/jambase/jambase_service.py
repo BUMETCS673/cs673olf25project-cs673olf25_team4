@@ -270,12 +270,42 @@ def main():
         )
         host = "127.0.0.1"
 
+    # SSL/HTTPS Configuration
+    ssl_enabled = os.getenv("JAMBASE_SSL_ENABLED", "false").lower() in (
+        "1",
+        "true",
+        "yes",
+    )
+    ssl_config = {}
+
+    if ssl_enabled:
+        ssl_certfile = os.getenv("JAMBASE_SSL_CERT_PATH")
+        ssl_keyfile = os.getenv("JAMBASE_SSL_KEY_PATH")
+
+        if ssl_certfile and ssl_keyfile:
+            if os.path.exists(ssl_certfile) and os.path.exists(ssl_keyfile):
+                ssl_config = {
+                    "ssl_certfile": ssl_certfile,
+                    "ssl_keyfile": ssl_keyfile,
+                }
+                logger.info("HTTPS enabled for Jambase service")
+            else:
+                logger.warning(
+                    "SSL certificates not found. Running without HTTPS. "
+                    "Expected cert: %s, key: %s",
+                    ssl_certfile,
+                    ssl_keyfile,
+                )
+        else:
+            logger.warning("SSL enabled but certificate paths not configured")
+
     uvicorn.run(
         "jambase_service:create_app",
         host=host,
         port=port,
         reload=True,
         factory=True,
+        **ssl_config,
     )
 
 
