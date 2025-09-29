@@ -6,6 +6,7 @@ Tests SSL configuration, security middleware, and HTTPS functionality.
 
 import pytest
 import os
+import tempfile
 from fastapi.testclient import TestClient
 from unittest.mock import patch, MagicMock
 from pathlib import Path
@@ -17,11 +18,13 @@ from app.core.ssl_settings import SSLSettings
 @pytest.fixture
 def ssl_test_env():
     """Set up test environment variables for SSL testing."""
+    # Use tempfile for secure temporary paths
+    temp_dir = tempfile.gettempdir()
     test_env = {
         "ENVIRONMENT": "test",
         "SSL_ENABLED": "false",  # Disabled by default for testing
-        "SSL_CERT_PATH": "/tmp/test_cert.pem",
-        "SSL_KEY_PATH": "/tmp/test_key.pem",
+        "SSL_CERT_PATH": os.path.join(temp_dir, "test_cert.pem"),
+        "SSL_KEY_PATH": os.path.join(temp_dir, "test_key.pem"),
         "FORCE_HTTPS": "false",
         "HSTS_ENABLED": "false",
         "CSP_ENABLED": "true",
@@ -45,11 +48,12 @@ class TestSSLSettings:
     def test_ssl_settings_initialization(self, ssl_test_env):
         """Test SSL settings are properly initialized."""
         settings = SSLSettings()
+        temp_dir = tempfile.gettempdir()
 
         assert settings.environment == "test"
         assert not settings.ssl_enabled
-        assert settings.ssl_cert_path == "/tmp/test_cert.pem"
-        assert settings.ssl_key_path == "/tmp/test_key.pem"
+        assert settings.ssl_cert_path == os.path.join(temp_dir, "test_cert.pem")
+        assert settings.ssl_key_path == os.path.join(temp_dir, "test_key.pem")
         assert not settings.force_https
         assert not settings.hsts_enabled
         assert settings.csp_enabled
@@ -93,6 +97,8 @@ class TestSSLSettings:
 
     def test_ssl_context_kwargs(self):
         """Test SSL context configuration."""
+        temp_dir = tempfile.gettempdir()
+
         # Test with SSL disabled
         settings = SSLSettings(ssl_enabled=False)
         assert settings.get_ssl_context_kwargs() is None
@@ -102,16 +108,18 @@ class TestSSLSettings:
         assert settings.get_ssl_context_kwargs() is None
 
         # Test with SSL enabled and valid paths
+        test_cert_path = os.path.join(temp_dir, "test_cert.pem")
+        test_key_path = os.path.join(temp_dir, "test_key.pem")
         settings = SSLSettings(
             ssl_enabled=True,
-            ssl_cert_path="/tmp/test_cert.pem",
-            ssl_key_path="/tmp/test_key.pem"
+            ssl_cert_path=test_cert_path,
+            ssl_key_path=test_key_path
         )
 
         kwargs = settings.get_ssl_context_kwargs()
         assert kwargs is not None
-        assert kwargs["ssl_certfile"] == "/tmp/test_cert.pem"
-        assert kwargs["ssl_keyfile"] == "/tmp/test_key.pem"
+        assert kwargs["ssl_certfile"] == test_cert_path
+        assert kwargs["ssl_keyfile"] == test_key_path
 
 
 class TestSecurityMiddleware:
