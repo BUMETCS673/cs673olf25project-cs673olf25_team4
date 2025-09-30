@@ -65,6 +65,9 @@ RUN echo '#!/bin/sh' > /docker-entrypoint.sh && \
     echo '    sed -i "s|ssl_dhparam /etc/nginx/ssl/dhparam.pem;|# ssl_dhparam disabled|g" /etc/nginx/conf.d/https.conf.template' >> /docker-entrypoint.sh && \
     echo '  fi' >> /docker-entrypoint.sh && \
     echo '  ' >> /docker-entrypoint.sh && \
+    echo '  # Disable HTTP-only config to prevent port 80 conflict' >> /docker-entrypoint.sh && \
+    echo '  rm -f /etc/nginx/conf.d/http.conf' >> /docker-entrypoint.sh && \
+    echo '  ' >> /docker-entrypoint.sh && \
     echo '  # Activate SSL configuration' >> /docker-entrypoint.sh && \
     echo '  cp /etc/nginx/conf.d/https.conf.template /etc/nginx/conf.d/https.conf' >> /docker-entrypoint.sh && \
     echo '  echo "HTTPS configuration activated"' >> /docker-entrypoint.sh && \
