@@ -131,6 +131,14 @@ jobs:
             echo "▶ Removing archive volume mount..."
             sed -i '/\/etc\/letsencrypt\/archive/d' docker-compose.prod.yml
 
+            # Debug: Show what the frontend section looks like after sed
+            echo "▶ Docker compose frontend volumes after sed:"
+            grep -A 15 "frontend:" docker-compose.prod.yml | grep -A 3 "volumes:"
+
+            # Debug: Verify SSL certificates exist on host
+            echo "▶ Checking SSL certificates on host:"
+            ls -la /etc/letsencrypt/live/testbeatmap.com/ || echo "Certificate directory not found"
+
             # Use production docker-compose (with SSL)
             sudo -E docker-compose -f docker-compose.prod.yml build --no-cache
             sudo -E docker-compose -f docker-compose.prod.yml up -d
@@ -150,6 +158,11 @@ jobs:
             echo ""
             echo "Frontend container logs (last 30 lines):"
             sudo docker logs --tail 30 beatmap_frontend_prod
+
+            # Check what SSL files are mounted in container
+            echo ""
+            echo "SSL files inside frontend container:"
+            sudo docker exec beatmap_frontend_prod ls -la /etc/nginx/ssl/ 2>/dev/null || echo "Could not check SSL directory"
 
             # Check if NGINX is listening on ports
             echo ""
