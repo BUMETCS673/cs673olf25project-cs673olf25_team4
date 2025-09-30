@@ -20,15 +20,23 @@ RUN npm run build
 # ---- Production Stage ----
 FROM nginx:alpine
 
-# Copy custom nginx server config into conf.d (don't replace the global nginx.conf)
-# The provided nginx.conf contains a server block and should live in conf.d
-COPY nginx.conf /etc/nginx/conf.d/default.conf
+# Install openssl for SSL certificate handling
+RUN apk add --no-cache openssl
+
+# Copy custom nginx configurations
+# nginx.conf is for HTTP, nginx-ssl.conf is for HTTPS
+COPY nginx.conf /etc/nginx/conf.d/http.conf
+COPY nginx-ssl.conf /etc/nginx/conf.d/https.conf.template
 
 # Copy built assets from build stage
 COPY --from=build /app/dist /usr/share/nginx/html
 
-# Expose port 80
-EXPOSE 80
+# Create SSL certificate directory
+RUN mkdir -p /etc/nginx/ssl
+
+# Expose ports 80 (HTTP) and 443 (HTTPS)
+EXPOSE 80 443
 
 # Start nginx
+# Note: SSL configuration will be activated when certificates are mounted
 CMD ["nginx", "-g", "daemon off;"]

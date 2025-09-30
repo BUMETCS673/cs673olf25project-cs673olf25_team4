@@ -7,8 +7,8 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 
 WORKDIR /app
 
-# Install system dependencies + bash
-RUN apk add --no-cache gcc musl-dev libffi-dev bash
+# Install system dependencies + bash + openssl for SSL certificate handling
+RUN apk add --no-cache gcc musl-dev libffi-dev bash openssl
 
 # Copy and install Python dependencies
 COPY requirements.txt ./requirements.txt
@@ -19,6 +19,10 @@ COPY app ./app
 COPY run_tests.sh ./run_tests.sh
 COPY tests ./tests
 
+# Create SSL certificate directory
+RUN mkdir -p /app/ssl
+
 ENV PORT=8000
 
+# Default to HTTP, can be overridden with environment variables and volume mounts
 CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
