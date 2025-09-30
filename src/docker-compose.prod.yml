@@ -150,8 +150,8 @@ services:
       - "80:80"      # HTTP (redirects to HTTPS)
       - "443:443"    # HTTPS
     volumes:
-      - /etc/letsencrypt/live/beatmap.live:/etc/nginx/ssl:ro  # Mount Let's Encrypt certificates (read-only)
-      - /etc/letsencrypt/archive/beatmap.live:/etc/nginx/ssl/archive:ro
+      - /etc/letsencrypt/live/beatmap.live:/etc/letsencrypt/live/beatmap.live:ro  # Mount Let's Encrypt certificates (read-only)
+      - /etc/letsencrypt/archive/beatmap.live:/etc/letsencrypt/archive/beatmap.live:ro  # Mount archive for symlinks
     depends_on:
       - backend
     environment:
