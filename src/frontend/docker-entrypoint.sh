@@ -1,6 +1,8 @@
 #!/bin/sh
 set -e
 
+echo "Starting NGINX SSL configuration..."
+
 # Find and copy SSL certificates from letsencrypt to nginx ssl directory
 CERT_FOUND=false
 if [ -d "/etc/letsencrypt/live" ]; then
@@ -22,23 +24,15 @@ fi
 
 # Configure NGINX based on certificate availability
 if [ "$CERT_FOUND" = "true" ]; then
-  echo "SSL certificates found, activating HTTPS configuration..."
+  echo "Activating HTTPS configuration..."
 
   # Update SSL configuration with correct paths
   sed -i "s|ssl_certificate /etc/nginx/ssl/dev/server.crt;|ssl_certificate /etc/nginx/ssl/fullchain.pem;|g" /etc/nginx/conf.d/https.conf.template
   sed -i "s|ssl_certificate_key /etc/nginx/ssl/dev/server.key;|ssl_certificate_key /etc/nginx/ssl/privkey.pem;|g" /etc/nginx/conf.d/https.conf.template
   sed -i "s|ssl_trusted_certificate /etc/nginx/ssl/dev/server.crt;|ssl_trusted_certificate /etc/nginx/ssl/fullchain.pem;|g" /etc/nginx/conf.d/https.conf.template
 
-  # Generate dhparam if it does not exist (optional, can be slow)
-  if [ ! -f "/etc/nginx/ssl/dhparam.pem" ]; then
-    echo "Generating dhparam (this may take a minute)..."
-    openssl dhparam -out /etc/nginx/ssl/dhparam.pem 2048 2>/dev/null || echo "# dhparam generation skipped" > /etc/nginx/ssl/dhparam.pem
-  fi
-
-  # Comment out dhparam line if file is just a comment
-  if grep -q "^#" /etc/nginx/ssl/dhparam.pem 2>/dev/null; then
-    sed -i "s|ssl_dhparam /etc/nginx/ssl/dhparam.pem;|# ssl_dhparam disabled|g" /etc/nginx/conf.d/https.conf.template
-  fi
+  # Disable dhparam (optional security feature that's very slow to generate)
+  sed -i "s|ssl_dhparam /etc/nginx/ssl/dhparam.pem;|# ssl_dhparam disabled for faster startup|g" /etc/nginx/conf.d/https.conf.template
 
   # Disable HTTP-only config to prevent port 80 conflict
   rm -f /etc/nginx/conf.d/http.conf
@@ -51,7 +45,9 @@ else
 fi
 
 # Test nginx configuration
+echo "Testing NGINX configuration..."
 nginx -t
 
 # Start nginx
+echo "Starting NGINX..."
 exec nginx -g "daemon off;"
