@@ -15,7 +15,7 @@ The tests cover the following:
    - Verifies status code and response content.
 
 2. Search endpoint ("/search")
-   - Success cases for both providers (Ticketmaster, JamBase) using mocked API responses.
+   - Success cases for both providers using mocked API responses.
    - Invalid provider handling (should return 400).
    - Provider API failure (simulated 500 response, should return 502).
    - Provider API timeout (simulated timeout, should return 502).
