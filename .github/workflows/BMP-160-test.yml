@@ -123,6 +123,11 @@ jobs:
             echo "▶ Deploying application with HTTPS..."
             cd src || exit 1
 
+            # Update docker-compose to use testbeatmap.com certificates
+            echo "▶ Updating certificate paths for testbeatmap.com..."
+            sed -i 's|/etc/letsencrypt/live/beatmap.live|/etc/letsencrypt/live/testbeatmap.com|g' docker-compose.prod.yml
+            sed -i 's|/etc/letsencrypt/archive/beatmap.live|/etc/letsencrypt/archive/testbeatmap.com|g' docker-compose.prod.yml
+
             # Use production docker-compose (with SSL)
             sudo -E docker-compose -f docker-compose.prod.yml build --no-cache
             sudo -E docker-compose -f docker-compose.prod.yml up -d
