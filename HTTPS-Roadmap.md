@@ -128,7 +128,7 @@ This roadmap outlines the steps to implement comprehensive HTTPS support for the
 
 ---
 
-## Phase 3: Infrastructure and Deployment 🔄
+## Phase 3: Infrastructure and Deployment ✅
 
 ### 3.1 Docker Configuration ✅
 - [x] **SSL-Enabled Containers** ✅
@@ -147,11 +147,11 @@ This roadmap outlines the steps to implement comprehensive HTTPS support for the
   - [x] Restart policies and logging configuration for production
   - [x] Comprehensive Docker HTTPS documentation (DOCKER-HTTPS-SETUP.md)
 
-### 3.2 Deployment Scripts
-- [ ] **Environment-Specific Deployment** ❌
-  - [ ] Development deployment (`deploy-dev.sh`)
-  - [ ] Production deployment (`deploy-prod.sh`)
-  - [ ] Staging deployment (`deploy-staging.sh`)
+### 3.2 Deployment Scripts ✅
+- [x] **Environment-Specific Deployment** ✅
+  - [x] Development deployment (`deploy-dev.sh`)
+  - [x] Production deployment (`deploy-prod.sh`)
+  - [x] Staging deployment (`deploy-staging.sh`)
 
 - [x] **Certificate Deployment Scripts** ✅
   - [x] Certificate deployment script created (`ssl/deploy-certificates.sh`)
@@ -368,10 +368,12 @@ This roadmap outlines the steps to implement comprehensive HTTPS support for the
    - ✅ Restart policies and logging for production
    - ✅ Comprehensive Docker HTTPS documentation (DOCKER-HTTPS-SETUP.md)
 
-### 🔄 Needs Implementation
+### ✅ Recently Completed
 
-5. **Deployment Scripts** ❌
-   - ❌ Environment-specific deployment scripts
+5. **Deployment Scripts** ✅
+   - ✅ Environment-specific deployment scripts (deploy-dev.sh, deploy-staging.sh, deploy-prod.sh)
+   - ✅ Automated deployment with health checks and rollback
+   - ✅ Pre-deployment validation and SSL certificate checks
 
 ### 🎯 Immediate Next Steps
 1. ✅ **Backend HTTPS Support Implementation Complete**
@@ -404,15 +406,15 @@ This roadmap outlines the steps to implement comprehensive HTTPS support for the
    - ✅ Environment-specific SSL configurations
    - ✅ Comprehensive Docker HTTPS documentation created (DOCKER-HTTPS-SETUP.md)
 
-5. **Deployment Scripts (Next Priority)**
-   - 🎯 Create environment-specific deployment scripts
-   - 🎯 Automated deployment procedures
+5. **Deployment Scripts** ✅
+   - ✅ Environment-specific deployment scripts created (deploy-dev.sh, deploy-staging.sh, deploy-prod.sh)
+   - ✅ Automated deployment procedures with validation and rollback
 
-6. **Test Server Deployment (After Deployment Scripts)**
-   - ✅ Scripts ready: `ssl/setup-testbeatmap-ssl.sh`
+6. **Test Server Deployment (Next Priority)**
+   - ✅ Scripts ready: `ssl/setup-testbeatmap-ssl.sh` and `deploy-staging.sh`
    - ✅ Application HTTPS support implementation complete (Backend + Frontend + Providers)
-   - 🎯 Execute certificate generation on test server
-   - 🎯 Deploy and test end-to-end HTTPS
+   - 🎯 Execute certificate generation on test server: `sudo bash ssl/setup-testbeatmap-ssl.sh`
+   - 🎯 Deploy and test end-to-end HTTPS: `sudo bash deploy-staging.sh`
 
 ### ⏳ Future Implementation
 1. **Production Server (`beatmap.live`)**
@@ -604,6 +606,6 @@ ENVIRONMENT=production
 
 ---
 
-*Last Updated: September 29, 2025*
-*Next Review: After Phase 3 Docker and infrastructure HTTPS support implementation*
-*Status: Phase 1 Complete ✅ | Phase 2 Complete ✅ | Phase 3 Infrastructure Next 🚀*
+*Last Updated: September 30, 2025*
+*Next Review: After Test Server Deployment*
+*Status: Phase 1 Complete ✅ | Phase 2 Complete ✅ | Phase 3 Complete ✅ | Test Server Deployment Next 🚀*
