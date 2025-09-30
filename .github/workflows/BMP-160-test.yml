@@ -1,0 +1,155 @@
+name: Deploy to EC2 - BMP-160 Branch (HTTPS)
+
+on:
+  push:
+    branches:
+      - BMP-160   # Only trigger on pushes to BMP-160
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    env:
+      JAMBASE_API_KEY: ${{ secrets.JAMBASE_API_KEY }}
+      TM_API_SECRET: ${{ secrets.TM_API_SECRET }}
+      TM_API_KEY: ${{ secrets.TM_API_KEY }}
+      GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
+      STAGING_DOMAIN: testbeatmap.com
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+          ref: BMP-160   # Always checkout BMP-160
+
+      - name: Deploy via SSH using deploy key
+        uses: appleboy/ssh-action@v0.1.7
+        with:
+          host: ${{ secrets.EC2_HOST_TEST }}
+          username: ec2-user
+          key: ${{ secrets.EC2_DEPLOY_KEY }}
+          script: |
+            export JAMBASE_API_KEY=${{ secrets.JAMBASE_API_KEY }}
+            export TM_API_SECRET=${{ secrets.TM_API_SECRET }}
+            export TM_API_KEY=${{ secrets.TM_API_KEY }}
+            export GROQ_API_KEY=${{ secrets.GROQ_API_KEY }}
+            export STAGING_DOMAIN=testbeatmap.com
+
+            echo "════════════════════════════════════════════════"
+            echo "  Deploying BMP-160 Branch to Test Server"
+            echo "  Domain: testbeatmap.com"
+            echo "  Branch: BMP-160 (HTTPS Implementation)"
+            echo "════════════════════════════════════════════════"
+
+            # Ensure required packages are installed
+            echo "▶ Checking prerequisites..."
+            if ! command -v git &> /dev/null; then
+              echo "Installing Git..."
+              sudo yum update -y
+              sudo yum install -y git
+            fi
+
+            if ! command -v certbot &> /dev/null; then
+              echo "Installing Certbot..."
+              sudo yum install -y certbot python3-certbot-nginx
+            fi
+
+            # Go to EC2 home directory
+            cd /home/ec2-user
+
+            echo "▶ Cleaning up Docker environment..."
+            # Stop and remove all containers
+            if [ "$(docker ps -aq)" ]; then
+              echo "Stopping containers..."
+              sudo docker stop $(docker ps -aq) || true
+              sudo docker rm -f $(docker ps -aq) || true
+            fi
+
+            # Remove all images
+            if [ "$(docker images -q)" ]; then
+              echo "Removing images..."
+              sudo docker rmi -f $(docker images -q) || true
+            fi
+
+            # Prune system
+            sudo docker system prune -a -f --volumes || true
+
+            # Remove old repo if it exists
+            if [ -d "cs673olf25project-cs673olf25_team4" ]; then
+              echo "Removing old repository..."
+              rm -rf cs673olf25project-cs673olf25_team4
+            fi
+
+            # Clone fresh repo from BMP-160 branch
+            echo "▶ Cloning repository (BMP-160 branch)..."
+            git clone --branch BMP-160 git@github.com:BUMETCS673/cs673olf25project-cs673olf25_team4.git
+
+            cd cs673olf25project-cs673olf25_team4 || exit 1
+
+            # Create .env file
+            echo "▶ Creating environment file..."
+            cat > src/.env << EOF
+            JAMBASE_API_KEY=$JAMBASE_API_KEY
+            TM_API_SECRET=$TM_API_SECRET
+            TM_API_KEY=$TM_API_KEY
+            GROQ_API_KEY=$GROQ_API_KEY
+            TM_BASE_URL=https://app.ticketmaster.com/discovery/v2
+            EOF
+
+            # Check and generate SSL certificates if needed
+            echo "▶ Checking SSL certificates..."
+            if [ ! -f "/etc/letsencrypt/live/testbeatmap.com/fullchain.pem" ]; then
+              echo "SSL certificates not found. Generating..."
+              sudo bash ssl/setup-testbeatmap-ssl.sh || {
+                echo "⚠️  SSL setup failed. Attempting deployment anyway..."
+              }
+            else
+              echo "✓ SSL certificates found"
+
+              # Check certificate expiration
+              EXPIRY_DATE=$(sudo openssl x509 -enddate -noout -in /etc/letsencrypt/live/testbeatmap.com/fullchain.pem | cut -d= -f2)
+              EXPIRY_EPOCH=$(date -d "$EXPIRY_DATE" "+%s")
+              CURRENT_EPOCH=$(date "+%s")
+              DAYS_UNTIL_EXPIRY=$(( ($EXPIRY_EPOCH - $CURRENT_EPOCH) / 86400 ))
+
+              echo "Certificate expires in $DAYS_UNTIL_EXPIRY days"
+
+              if [ $DAYS_UNTIL_EXPIRY -lt 7 ]; then
+                echo "Certificate expiring soon. Renewing..."
+                sudo certbot renew --force-renewal || true
+              fi
+            fi
+
+            # Deploy with HTTPS support
+            echo "▶ Deploying application with HTTPS..."
+            cd src || exit 1
+
+            # Use production docker-compose (with SSL)
+            sudo -E docker-compose -f docker-compose.prod.yml build --no-cache
+            sudo -E docker-compose -f docker-compose.prod.yml up -d
+
+            echo "▶ Waiting for services to start..."
+            sleep 30
+
+            # Health checks
+            echo "▶ Performing health checks..."
+
+            # Check backend
+            if curl -f --max-time 10 https://testbeatmap.com:8443/health 2>/dev/null; then
+              echo "✓ Backend service is healthy"
+            else
+              echo "⚠️  Backend health check failed (may still be starting)"
+            fi
+
+            # Check frontend
+            if curl -f --max-time 10 https://testbeatmap.com 2>/dev/null; then
+              echo "✓ Frontend service is healthy"
+            else
+              echo "⚠️  Frontend health check failed (may still be starting)"
+            fi
+
+            echo ""
+            echo "════════════════════════════════════════════════"
+            echo "  ✓ BMP-160 Branch Deployment Complete"
+            echo "  Access: https://testbeatmap.com"
+            echo "  Branch: BMP-160 (HTTPS Implementation)"
+            echo "════════════════════════════════════════════════"
