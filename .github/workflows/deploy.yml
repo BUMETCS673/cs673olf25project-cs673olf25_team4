@@ -1,17 +1,19 @@
-name: Deploy to EC2
+name: Deploy to EC2 - PRODUCTION (HTTPS)
 
 on:
   workflow_run:
     workflows: ["Build"]
     types:
       - completed
+  workflow_dispatch:  # Allows manual triggering from GitHub UI
 
 jobs:
   deploy:
     if: >
       ${{
-        github.event.workflow_run.conclusion == 'success' &&
-        github.event.workflow_run.head_branch == 'main'
+        github.event_name == 'workflow_dispatch' ||
+        (github.event.workflow_run.conclusion == 'success' &&
+         github.event.workflow_run.head_branch == 'main')
       }}
     runs-on: ubuntu-latest
     env:
@@ -19,7 +21,8 @@ jobs:
       TM_API_SECRET: ${{ secrets.TM_API_SECRET }}
       TM_API_KEY: ${{ secrets.TM_API_KEY }}
       GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
-      
+      PRODUCTION_DOMAIN: beatmap.live
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v3
@@ -38,52 +41,135 @@ jobs:
             export TM_API_SECRET=${{ secrets.TM_API_SECRET }}
             export TM_API_KEY=${{ secrets.TM_API_KEY }}
             export GROQ_API_KEY=${{ secrets.GROQ_API_KEY }}
-            echo "Starting deployment of main branch..."
+            export PRODUCTION_DOMAIN=beatmap.live
 
-            echo "Checking if Git is installed..."
-            if ! command -v git &> /dev/null
-            then
-              echo "Git not found. Installing Git..."
+            echo "════════════════════════════════════════════════"
+            echo "  ⚠️  PRODUCTION DEPLOYMENT WITH HTTPS"
+            echo "  Domain: beatmap.live"
+            echo "════════════════════════════════════════════════"
+
+            # Ensure required packages are installed
+            echo "▶ Checking prerequisites..."
+            if ! command -v git &> /dev/null; then
+              echo "Installing Git..."
               sudo yum update -y
               sudo yum install -y git
-            else
-              echo "Git already installed."
             fi
 
-            echo "Changing to home directory..."
+            if ! command -v certbot &> /dev/null; then
+              echo "Installing Certbot..."
+              sudo yum install -y certbot python3-certbot-nginx
+            fi
+
+            echo "▶ Changing to home directory..."
             cd /home/ec2-user
 
-            echo "Checking for running containers..."
-            if [ "$(docker ps -q)" ]; then
-              echo "Stopping existing containers..."
-              sudo docker-compose -f cs673olf25project-cs673olf25_team4/src/docker-compose.yml down
-              echo "Containers stopped."
-            else
-              echo "No running containers found."
-            fi
-            
-            echo "Checking for old repository..."
+            # Create backup before deployment
+            echo "▶ Creating backup..."
+            BACKUP_DIR="/home/ec2-user/backups/prod_$(date +%Y%m%d_%H%M%S)"
+            mkdir -p "$BACKUP_DIR"
+
             if [ -d "cs673olf25project-cs673olf25_team4" ]; then
-              echo "Removing old repository..."
-              rm -rf cs673olf25project-cs673olf25_team4
-              echo "Old repository removed."
-            else
-              echo "No old repository found."
+              echo "Backing up current deployment..."
+              sudo docker-compose -f cs673olf25project-cs673olf25_team4/src/docker-compose.prod.yml config > "$BACKUP_DIR/docker-compose.backup.yml" 2>/dev/null || true
             fi
 
-            echo "Wait..."
-            sleep 3
-            echo "Cloning fresh copy of repository (branch: main)..."
+            echo "▶ Stopping existing containers..."
+            if [ "$(docker ps -q)" ]; then
+              sudo docker-compose -f cs673olf25project-cs673olf25_team4/src/docker-compose.prod.yml down --timeout 30 || true
+            fi
+
+            echo "▶ Removing old repository..."
+            if [ -d "cs673olf25project-cs673olf25_team4" ]; then
+              rm -rf cs673olf25project-cs673olf25_team4
+            fi
+
+            echo "▶ Cloning repository (main branch)..."
             git clone --branch main git@github.com:BUMETCS673/cs673olf25project-cs673olf25_team4.git
-            echo "Repository cloned."
 
-            echo "Moving into project src directory..."
-            cd cs673olf25project-cs673olf25_team4/src || exit 1
+            cd cs673olf25project-cs673olf25_team4 || exit 1
 
-            echo "Rebuilding Docker containers from scratch..."
-            sudo -E docker-compose build --no-cache
-            echo "Docker images built."
+            # Create .env file
+            echo "▶ Creating environment file..."
+            cat > src/.env << EOF
+            JAMBASE_API_KEY=$JAMBASE_API_KEY
+            TM_API_SECRET=$TM_API_SECRET
+            TM_API_KEY=$TM_API_KEY
+            GROQ_API_KEY=$GROQ_API_KEY
+            TM_BASE_URL=https://app.ticketmaster.com/discovery/v2
+            EOF
 
-            echo "Starting Docker containers..."
-            sudo -E docker-compose up -d
-            echo "Deployment complete."
+            # Check and generate SSL certificates if needed
+            echo "▶ Checking SSL certificates for beatmap.live..."
+            if [ ! -f "/etc/letsencrypt/live/beatmap.live/fullchain.pem" ]; then
+              echo "SSL certificates not found. Generating..."
+              sudo bash ssl/setup-production-ssl.sh || {
+                echo "❌ SSL setup failed. Deployment aborted."
+                echo "Rolling back..."
+                if [ -f "$BACKUP_DIR/docker-compose.backup.yml" ]; then
+                  sudo docker-compose -f "$BACKUP_DIR/docker-compose.backup.yml" up -d
+                fi
+                exit 1
+              }
+            else
+              echo "✓ SSL certificates found"
+
+              # Check certificate expiration
+              EXPIRY_DATE=$(sudo openssl x509 -enddate -noout -in /etc/letsencrypt/live/beatmap.live/fullchain.pem | cut -d= -f2)
+              EXPIRY_EPOCH=$(date -d "$EXPIRY_DATE" "+%s")
+              CURRENT_EPOCH=$(date "+%s")
+              DAYS_UNTIL_EXPIRY=$(( ($EXPIRY_EPOCH - $CURRENT_EPOCH) / 86400 ))
+
+              echo "Certificate expires in $DAYS_UNTIL_EXPIRY days"
+
+              if [ $DAYS_UNTIL_EXPIRY -lt 7 ]; then
+                echo "Certificate expiring soon. Renewing..."
+                sudo certbot renew --force-renewal || true
+              fi
+            fi
+
+            # Deploy with HTTPS support
+            echo "▶ Building Docker images..."
+            cd src || exit 1
+            sudo -E docker-compose -f docker-compose.prod.yml build --no-cache
+
+            echo "▶ Starting containers with HTTPS..."
+            sudo -E docker-compose -f docker-compose.prod.yml up -d
+
+            echo "▶ Waiting for services to start..."
+            sleep 45
+
+            # Health checks
+            echo "▶ Performing health checks..."
+            HEALTH_FAILED=false
+
+            # Check backend
+            if curl -f --max-time 10 https://beatmap.live:8443/health 2>/dev/null; then
+              echo "✓ Backend service is healthy"
+            else
+              echo "⚠️  Backend health check failed"
+              HEALTH_FAILED=true
+            fi
+
+            # Check frontend
+            if curl -f --max-time 10 https://beatmap.live 2>/dev/null; then
+              echo "✓ Frontend service is healthy"
+            else
+              echo "⚠️  Frontend health check failed"
+              HEALTH_FAILED=true
+            fi
+
+            if [ "$HEALTH_FAILED" = true ]; then
+              echo ""
+              echo "⚠️  Some health checks failed. Check logs:"
+              echo "sudo docker-compose -f /home/ec2-user/cs673olf25project-cs673olf25_team4/src/docker-compose.prod.yml logs"
+              echo ""
+              echo "Backup available at: $BACKUP_DIR"
+            fi
+
+            echo ""
+            echo "════════════════════════════════════════════════"
+            echo "  ✓ Production Deployment Complete"
+            echo "  Access: https://beatmap.live"
+            echo "  Backup: $BACKUP_DIR"
+            echo "════════════════════════════════════════════════"
