@@ -10,9 +10,10 @@ from typing import Optional
 
 import uvicorn
 from fastapi import FastAPI, HTTPException, APIRouter, Query
-from pydantic import BaseModel, ValidationError
+from pydantic import BaseModel, ValidationError, Field
 from groq import Groq
 from starlette.concurrency import run_in_threadpool
+from typing import List
 
 import logging
 
@@ -45,6 +46,22 @@ class SummaryResponse(BaseModel):
     total_tokens: Optional[int] = None
 
 
+class UserPreferences(BaseModel):
+    genres: List[str] = Field(default_factory=list, description="Preferred music genres")
+    artists: List[str] = Field(default_factory=list, description="Preferred artists")
+    locations: List[str] = Field(default_factory=list, description="Preferred cities")
+
+
+class Recommendation(BaseModel):
+    rank: int = Field(..., description="Ranking of this recommendation in the list")
+    event_id: str = Field(..., description="Unique identifier for the recommended event")
+    reason: str = Field(..., description="Explanation of why this event is recommended")
+
+
+class RecommendationsResponse(BaseModel):
+    recommendations: List[Recommendation]
+
+
 class GroqService:
     def __init__(self) -> None:
         self.router = APIRouter()
@@ -67,6 +84,12 @@ class GroqService:
             self.get_summary,
             methods=["GET"],
             response_model=SummaryResponse,
+        )
+        self.router.add_api_route(
+            "/get_user_preferences",
+            self.get_user_preferences,
+            methods=["GET"],
+            response_model=UserPreferences
         )
 
     async def root(self):
@@ -137,6 +160,44 @@ class GroqService:
         # client = self._ensure_client()
         # TODO: Implement summarization
         raise HTTPException(status_code=501, detail="Not implemented yet")
+
+    async def get_user_preferences(self, user_input: str = Query(...)) -> UserPreferences:
+        # TODO: implement getting the user's preferences
+        logger.info("Received user preferences request")
+        client = self._ensure_client()
+
+        chat_completion = await run_in_threadpool(
+            client.chat.completions.create,
+            messages=[
+                {
+                    "role": "system",
+                    "content": (
+                        "You are an intent-to-preferences extractor.\n"
+                        "Fields:\n"
+                        "- genres: array of strings\n"
+                        "- artists: array of strings\n"
+                        "- locations: array of strings\n"
+                        "Rules:\n"
+                        "- Extract genres if mentioned (e.g., 'metal', 'rock').\n"
+                        "- Extract artists if mentioned (one or more).\n"
+                        "- Extract locations if mentioned (one or more).\n"
+                        "- Missing/unclear -> empty array or null.\n\n"
+                        "Output:\n"
+                        "- Exactly one JSON line.\n"
+                        "- Only the preferences object, nothing else.\n"
+                        '{"genres":["..."],"artists":["..."],"locations":["..."]}'
+                    ),
+                },
+                {"role": "user", "content": user_input},
+            ],
+            model="groq/compound",
+            temperature=0.0,
+        )
+
+        content = chat_completion.choices[0].message.content.strip()
+        logger.debug(f"Model raw output: {content}")
+
+        # TODO: finish implementation
 
     def _ensure_client(self) -> Groq:
         """
