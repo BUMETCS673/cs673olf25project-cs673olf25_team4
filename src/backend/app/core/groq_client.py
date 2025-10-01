@@ -8,17 +8,30 @@ Acts as the client for interacting with the Groq provider API.
 import os
 import httpx
 from fastapi import HTTPException
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 class GroqClient:
     def __init__(
         self, base_url: str | None = None, client: httpx.AsyncClient | None = None
     ):
+        # Support both old and new environment variable names
         self.base_url = base_url or os.getenv(
-            "GROQ_PROVIDER_URL", "http://groq_provider:8003"
+            "GROQ_API_URL",
+            os.getenv("GROQ_PROVIDER_URL", "http://groq_provider:8003")
         )
+
+        # Determine if we should verify SSL certificates
+        environment = os.getenv("ENVIRONMENT", "development").lower()
+        verify_ssl = environment in ["production", "prod", "staging"]
+
+        if not verify_ssl:
+            logger.warning("SSL verification disabled for Groq client in development")
+
         # Inject client for testability, otherwise create a new one
-        self._client = client or httpx.AsyncClient()
+        self._client = client or httpx.AsyncClient(verify=verify_ssl)
 
     async def extract_tokens(self, user_input: str) -> dict:
         return await self._request(

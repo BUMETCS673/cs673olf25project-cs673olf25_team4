@@ -1,12 +1,12 @@
 # Development SSL Certificate Information
-# Generated on: Wed Oct  1 08:04:23 EDT 2025
+# Generated on: Mon Sep 29 07:17:51 EDT 2025
 
 Certificate: ssl/dev/server.crt
 Private Key: ssl/dev/server.key
 Diffie-Hellman: ssl/dev/dhparam.pem
 
 Valid for: 365 days
-Expires: Oct  1 12:03:54 2026 GMT
+Expires: Sep 29 11:16:56 2026 GMT
 
 Usage in application:
 SSL_CERT_PATH=./ssl/dev/server.crt

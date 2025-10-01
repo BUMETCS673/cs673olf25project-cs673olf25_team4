@@ -7,10 +7,6 @@ services:
       context: ./backend
       dockerfile: Dockerfile
     container_name: concert_backend_prod
-    command: >
-      uvicorn app.main:app --host 0.0.0.0 --port 8443
-      --ssl-keyfile=/app/ssl/privkey.pem
-      --ssl-certfile=/app/ssl/fullchain.pem
     ports:
       - "8443:8443"   # HTTPS only
     volumes:
@@ -20,14 +16,21 @@ services:
       - jambase_provider
       - groq_provider
     environment:
+      # Environment
+      ENVIRONMENT: production
+
+      # Server Configuration
+      BEATMAP_HOST: "0.0.0.0"  # Listen on all interfaces for Docker
+      BEATMAP_PORT: "8000"
+
       # SSL Configuration
       SSL_ENABLED: "true"
       SSL_CERT_PATH: /app/ssl/fullchain.pem
       SSL_KEY_PATH: /app/ssl/privkey.pem
+      SSL_PORT: "8443"
       FORCE_HTTPS: "true"  # Enforce HTTPS in production
       HSTS_ENABLED: "true"  # Enable HSTS in production
       HSTS_PRELOAD: "true"
-      ENVIRONMENT: production
 
       # Provider URLs (HTTPS internal)
       JAMBASE_API_URL: https://jambase_provider:8002

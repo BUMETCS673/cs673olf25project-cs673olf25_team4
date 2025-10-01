@@ -24,5 +24,5 @@ RUN mkdir -p /app/ssl
 
 ENV PORT=8000
 
-# Default to HTTP, can be overridden with environment variables and volume mounts
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+# Use Python to run the main function which handles SSL configuration
+CMD ["python", "-m", "app"]

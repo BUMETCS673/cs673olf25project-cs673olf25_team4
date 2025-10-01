@@ -7,10 +7,6 @@ services:
       context: ./backend
       dockerfile: Dockerfile
     container_name: concert_backend_dev
-    command: >
-      uvicorn app.main:app --host 0.0.0.0 --port 8443
-      --ssl-keyfile=/app/ssl/server.key
-      --ssl-certfile=/app/ssl/server.crt
     ports:
       - "8000:8000"   # HTTP fallback
       - "8443:8443"   # HTTPS
@@ -21,10 +17,18 @@ services:
       - jambase_provider
       - groq_provider
     environment:
+      # Environment
+      ENVIRONMENT: development
+
+      # Server Configuration
+      BEATMAP_HOST: "0.0.0.0"  # Listen on all interfaces for Docker
+      BEATMAP_PORT: "8000"
+
       # SSL Configuration
       SSL_ENABLED: "true"
       SSL_CERT_PATH: /app/ssl/server.crt
       SSL_KEY_PATH: /app/ssl/server.key
+      SSL_PORT: "8443"
       FORCE_HTTPS: "false"  # Allow HTTP for development
       HSTS_ENABLED: "false"  # Disable HSTS in development
 
