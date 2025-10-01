@@ -3,7 +3,7 @@ name: Deploy to EC2 - BMP-160 Branch (HTTPS)
 on:
   push:
     branches:
-      - BMP-160   # Only trigger on pushes to BMP-160
+      - BMP-160-clean   # Only trigger on pushes to BMP-160-clean
 
 jobs:
   deploy:
