@@ -20,6 +20,9 @@ RUN npm run build
 # ---- Production Stage ----
 FROM nginx:alpine
 
+# Remove default site to prevent server_name conflicts
+RUN rm -f /etc/nginx/conf.d/default.conf
+
 # Install openssl for SSL certificate handling
 RUN apk add --no-cache openssl
 
@@ -36,7 +39,8 @@ RUN mkdir -p /etc/nginx/ssl
 
 # Copy and set up entrypoint script
 COPY docker-entrypoint.sh /docker-entrypoint.sh
-RUN chmod +x /docker-entrypoint.sh
+# Normalize line endings (works even if dos2unix is absent)
+RUN sed -i 's/\r$//' /docker-entrypoint.sh && chmod +x /docker-entrypoint.sh
 
 # Expose ports 80 (HTTP) and 443 (HTTPS)
 EXPOSE 80 443
