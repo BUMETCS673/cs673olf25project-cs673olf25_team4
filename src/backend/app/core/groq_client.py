@@ -9,8 +9,6 @@ import os
 import httpx
 from fastapi import HTTPException
 
-from src.providers.groq.groq_service import UserPreferencesResponse
-
 
 class GroqClient:
     def __init__(
