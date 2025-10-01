@@ -16,6 +16,7 @@ from starlette.concurrency import run_in_threadpool
 from typing import List
 
 import logging
+import json
 
 logging.basicConfig(
     level=logging.INFO,
@@ -49,7 +50,6 @@ class SummaryResponse(BaseModel):
 class UserPreferences(BaseModel):
     genres: List[str] = Field(default_factory=list, description="Preferred music genres")
     artists: List[str] = Field(default_factory=list, description="Preferred artists")
-    locations: List[str] = Field(default_factory=list, description="Preferred cities")
 
 
 class UserPreferencesResponse(BaseModel):
@@ -96,6 +96,12 @@ class GroqService:
             self.get_user_preferences,
             methods=["GET"],
             response_model=UserPreferences
+        )
+        self.router.add_api_route(
+            "/create_recommendations",
+            self.create_recommendations,
+            methods=["POST"],
+            response_model=RecommendationsResponse
         )
 
     async def root(self):
@@ -212,6 +218,49 @@ class GroqService:
                 artists=[],
                 locations=[]
             )
+
+    async def create_recommendations(self, user_preferences: UserPreferences, events: list) -> RecommendationsResponse:
+        """
+        Receive user_preferences and events from search_results and create list of recommended events
+        """
+        logger.info("Received recommendations request")
+        client = self._ensure_client()
+
+        # Build prompt messages
+        payload = {
+            "user_preferences": user_preferences.model_dump(),
+            "events": [e.model_dump() for e in events]
+        }
+        chat_completion = await run_in_threadpool(
+            client.chat.completions.create,
+            messages=[
+                {
+                "role": "system",
+                "content": (
+                    "You are a concert recommendation engine. "
+                    "Given user_preferences and a list of candidate events, return the top 3 recommendations. "
+                    "Output should be JSON in the format: "
+                    "[ { \"rank\": int, \"event_id\": str, \"reason\": str }, … ]"
+                )
+            },
+            {
+                "role": "user",
+                "content": json.dumps(payload)
+            }
+            ],
+            model="groq/compound",
+            temperature=0.0,
+        )
+        
+        content = chat_completion.choices[0].message.content.strip()
+        logger.debug("Groq recommendation raw output: %s", content)
+
+        try:
+            resp = RecommendationsResponse.model_validate_json(content)
+            return resp
+        except ValidationError as e:
+            logger.warning("Invalid recommendation JSON: %s", content, e)
+            return RecommendationsResponse(recommendations = [])
 
     def _ensure_client(self) -> Groq:
         """
