@@ -19,8 +19,7 @@ class GroqClient:
     ):
         # Support both old and new environment variable names
         self.base_url = base_url or os.getenv(
-            "GROQ_API_URL",
-            os.getenv("GROQ_PROVIDER_URL", "http://groq_provider:8003")
+            "GROQ_API_URL", os.getenv("GROQ_PROVIDER_URL", "http://groq_provider:8003")
         )
 
         # Determine if we should verify SSL certificates
