@@ -40,7 +40,9 @@ app = create_app()
 
 def main():
     """Run the backend with uvicorn directly."""
-    host = os.getenv("BEATMAP_HOST", "127.0.0.1")  # default to localhost to avoid binding all interfaces
+    host = os.getenv(
+        "BEATMAP_HOST", "127.0.0.1"
+    )  # default to localhost to avoid binding all interfaces
     port = int(os.getenv("BEATMAP_PORT", "8000"))
 
     uvicorn.run(

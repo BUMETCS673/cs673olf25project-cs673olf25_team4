@@ -33,8 +33,10 @@ class GroqClient:
             "/get_user_preferences",
             params={"user_input": user_input},
         )
-    
-    async def create_recommendations(self, user_preferences: dict, events: list) -> dict:
+
+    async def create_recommendations(
+        self, user_preferences: dict, events: list
+    ) -> dict:
         """
         Forward preferences + events to the Groq service and return recommendations.
         """
