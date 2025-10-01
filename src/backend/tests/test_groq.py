@@ -32,3 +32,16 @@ async def test_extract_tokens_with_test_client():
     groq = GroqClient(client=FakeAsyncClient(test_response))
     tokens = await groq.extract_tokens("Metallica in Tampa 2026")
     assert tokens == test_response
+
+
+@pytest.mark.asyncio
+async def test_get_user_preferences_with_test_client():
+    test_response = {
+        "genres": ["rap, rock"],
+        "artists": ["Clipse, Radiohead"],
+        "locations": ["Detroit"]
+    }
+    groq = GroqClient(client=FakeAsyncClient(test_response))
+    user_preferences = await groq.get_user_preferences("I listen to rap and rock. My favorite artists are Clipse and "
+                                                       "Radiohead. I am interested in shows in the Detroit area.")
+    assert user_preferences == test_response

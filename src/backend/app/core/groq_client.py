@@ -9,6 +9,8 @@ import os
 import httpx
 from fastapi import HTTPException
 
+from src.providers.groq.groq_service import UserPreferencesResponse
+
 
 class GroqClient:
     def __init__(
@@ -24,6 +26,13 @@ class GroqClient:
         return await self._request(
             "GET",
             "/get_tokens",
+            params={"user_input": user_input},
+        )
+
+    async def get_user_preferences(self, user_input: str) -> dict:
+        return await self._request(
+            "GET",
+            "/get_user_preferences",
             params={"user_input": user_input},
         )
 

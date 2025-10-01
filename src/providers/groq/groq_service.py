@@ -52,6 +52,12 @@ class UserPreferences(BaseModel):
     locations: List[str] = Field(default_factory=list, description="Preferred cities")
 
 
+class UserPreferencesResponse(BaseModel):
+    genres: List[str] = Field(default_factory=list, description="Preferred music genres")
+    artists: List[str] = Field(default_factory=list, description="Preferred artists")
+    locations: List[str] = Field(default_factory=list, description="Preferred cities")
+
+
 class Recommendation(BaseModel):
     rank: int = Field(..., description="Ranking of this recommendation in the list")
     event_id: str = Field(..., description="Unique identifier for the recommended event")
@@ -161,8 +167,7 @@ class GroqService:
         # TODO: Implement summarization
         raise HTTPException(status_code=501, detail="Not implemented yet")
 
-    async def get_user_preferences(self, user_input: str = Query(...)) -> UserPreferences:
-        # TODO: implement getting the user's preferences
+    async def get_user_preferences(self, user_input: str = Query(...)) -> UserPreferencesResponse:
         logger.info("Received user preferences request")
         client = self._ensure_client()
 
@@ -197,7 +202,16 @@ class GroqService:
         content = chat_completion.choices[0].message.content.strip()
         logger.debug(f"Model raw output: {content}")
 
-        # TODO: finish implementation
+        try:
+            data = UserPreferences.model_validate_json(content)
+            return UserPreferencesResponse(**data.model_dump())
+        except ValidationError:
+            logger.warning("Schema validation failed for user preferences output: %s", content)
+            return UserPreferencesResponse(
+                genres=[],
+                artists=[],
+                locations=[]
+            )
 
     def _ensure_client(self) -> Groq:
         """
