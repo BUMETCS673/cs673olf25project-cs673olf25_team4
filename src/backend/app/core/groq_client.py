@@ -33,6 +33,16 @@ class GroqClient:
             "/get_user_preferences",
             params={"user_input": user_input},
         )
+    
+    async def create_recommendations(self, user_preferences: dict, events: list) -> dict:
+        """
+        Forward preferences + events to the Groq service and return recommendations.
+        """
+        return await self._request(
+            "POST",
+            "/create_recommendations",
+            json={"user_preferences": user_preferences, "events": events},
+        )
 
     async def get_summary(self) -> dict:
         return await self._request("GET", "/get_summary")

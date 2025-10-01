@@ -45,3 +45,20 @@ async def test_get_user_preferences_with_test_client():
     user_preferences = await groq.get_user_preferences("I listen to rap and rock. My favorite artists are Clipse and "
                                                        "Radiohead. I am interested in shows in the Detroit area.")
     assert user_preferences == test_response
+
+
+@pytest.mark.asyncio
+async def test_create_recommendations_with_test_client():
+    test_response = [
+        {"rank": 1, "event_id": "123", "reason": "match"},
+        {"rank": 2, "event_id": "456", "reason": "close"},
+        {"rank": 3, "event_id": "789", "reason": "similar"},
+    ]
+
+    groq = GroqClient(client=FakeAsyncClient(test_response))
+    recs = await groq.create_recommendations(
+        {"genres": ["rap"], "artists": ["Clipse"], "locations": ["Detroit"]},
+        [{"id": "123"}, {"id": "456"}, {"id": "789"}],
+    )
+
+    assert recs == test_response
