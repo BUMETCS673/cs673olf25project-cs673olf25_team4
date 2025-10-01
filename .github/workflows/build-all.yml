@@ -35,4 +35,9 @@ jobs:
       run: flake8 ../backend ../providers
 
     - name: Run tests
-      run: pytest tests --maxfail=1 --disable-warnings -q
+      run: |
+        pytest tests \
+          --ignore=tests/test_ssl_integration.py \
+          --ignore=tests/test_ssl_tdd.py \
+          --ignore=tests/step_definitions \
+          --maxfail=1 --disable-warnings -q

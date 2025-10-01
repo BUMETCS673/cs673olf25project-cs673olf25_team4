@@ -334,6 +334,63 @@ def create_app() -> FastAPI:
 # Expose module-level ASGI app for uvicorn (module:app)
 app = create_app()
 
+
+# ---------- Entrypoint ----------
+def main():
+    """Entry point for running the Groq service directly."""
+    host = os.getenv("GROQ_HOST", "127.0.0.1")
+    port = int(os.getenv("GROQ_PORT", "8003"))
+    reload_enabled = os.getenv("GROQ_RELOAD", "false").lower() in ("1", "true", "yes")
+
+    # Check if binding to all interfaces was explicitly allowed
+    allow_all = os.getenv("GROQ_ALLOW_BIND_ALL", "false").lower() in (
+        "1",
+        "true",
+        "yes",
+    )
+    if not allow_all and host in ("0.0.0.0", "::"):  # nosec B104
+        logger.warning(
+            "Binding to '%s' (all interfaces) is disabled by default. "
+            "Override by setting GROQ_ALLOW_BIND_ALL=true. "
+            "Falling back to localhost (127.0.0.1).",
+            host,
+        )
+        host = "127.0.0.1"
+
+    # SSL/HTTPS Configuration
+    ssl_enabled = os.getenv("GROQ_SSL_ENABLED", "false").lower() in ("1", "true", "yes")
+    ssl_config = {}
+
+    if ssl_enabled:
+        ssl_certfile = os.getenv("GROQ_SSL_CERT_PATH")
+        ssl_keyfile = os.getenv("GROQ_SSL_KEY_PATH")
+
+        if ssl_certfile and ssl_keyfile:
+            if os.path.exists(ssl_certfile) and os.path.exists(ssl_keyfile):
+                ssl_config = {
+                    "ssl_certfile": ssl_certfile,
+                    "ssl_keyfile": ssl_keyfile,
+                }
+                logger.info("HTTPS enabled for Groq service")
+            else:
+                logger.warning(
+                    "SSL certificates not found. Running without HTTPS. "
+                    "Expected cert: %s, key: %s",
+                    ssl_certfile,
+                    ssl_keyfile,
+                )
+        else:
+            logger.warning("SSL enabled but certificate paths not configured")
+
+    uvicorn.run(
+        "groq_service:create_app",
+        host=host,
+        port=port,
+        reload=reload_enabled,
+        factory=True,
+        **ssl_config,
+    )
+
+
 if __name__ == "__main__":
-    # Run directly: python groq_service.py
-    uvicorn.run(app, host="127.0.0.1", port=int(os.getenv("PORT", "8000")))
+    main()

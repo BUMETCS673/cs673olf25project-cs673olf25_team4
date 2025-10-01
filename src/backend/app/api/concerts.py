@@ -31,13 +31,15 @@ class ConcertsService:
             tags=["concerts"],
         )
 
-        # Provider URLs from env
+        # Provider URLs from env (support both old and new variable names)
         self.concert_data_providers = {
             "jambase": os.getenv(
-                "JAMBASE_PROVIDER_URL", "http://jambase_provider:8000"
+                "JAMBASE_API_URL",
+                os.getenv("JAMBASE_PROVIDER_URL", "http://jambase_provider:8002"),
             ),
             "ticketmaster": os.getenv(
-                "TM_PROVIDER_URL", "http://ticketmaster_provider:8000"
+                "TICKETMASTER_API_URL",
+                os.getenv("TM_PROVIDER_URL", "http://ticketmaster_provider:8001"),
             ),
         }
 
@@ -46,6 +48,14 @@ class ConcertsService:
         }
 
         self._provider_cycle = cycle(self.concert_data_providers.keys())
+
+        # Determine if we should verify SSL certificates
+        # In development with self-signed certs, we disable verification
+        environment = os.getenv("ENVIRONMENT", "development").lower()
+        self.verify_ssl = environment in ["production", "prod", "staging"]
+
+        if not self.verify_ssl:
+            logger.warning("SSL verification disabled for development environment")
 
     async def root(self):
         return {
@@ -84,14 +94,35 @@ class ConcertsService:
         logger.info(f"Using provider: {concert_data_provider}")
         try:
             clean = {k: v for k, v in params.items() if v is not None}
-            async with httpx.AsyncClient(timeout=20.0) as client:
+            # Create HTTP client with appropriate SSL verification
+            async with httpx.AsyncClient(
+                timeout=20.0, verify=self.verify_ssl
+            ) as client:
                 response = await client.get(
                     f"{self.concert_data_providers[concert_data_provider]}/search",
                     params=clean,
                 )
                 response.raise_for_status()
                 return response.json()
+        except httpx.HTTPStatusError as e:
+            logger.error(
+                f"HTTP error from provider {provider}: "
+                f"{e.response.status_code} - {e.response.text}"
+            )
+            raise HTTPException(
+                status_code=502,
+                detail=f"Provider {provider} returned error: {e.response.status_code}",
+            )
+        except httpx.RequestError as e:
+            logger.error(f"Request error to provider {provider}: {str(e)}")
+            raise HTTPException(
+                status_code=502,
+                detail=f"Error connecting to provider {provider}: {str(e)}",
+            )
         except Exception as e:
+            logger.error(
+                f"Unexpected error fetching from provider {provider}: {str(e)}"
+            )
             raise HTTPException(
                 status_code=502, detail=f"Error fetching concert data: {e}"
             )

@@ -82,4 +82,31 @@ venv.bak/
 
 # PyCharm files
 .idea/
-ssl/
+
+# SSL Certificates and Private Keys (NEVER commit these)
+ssl/dev/*.crt
+ssl/dev/*.key
+ssl/dev/*.pem
+ssl/testbeatmap/*.crt
+ssl/testbeatmap/*.key
+ssl/testbeatmap/*.pem
+ssl/production/*.crt
+ssl/production/*.key
+ssl/production/*.pem
+
+# SSL Certificate backups
+ssl/backups/
+ssl/dev/dev.backup/
+/etc/ssl/backups/
+
+# Environment files with SSL configuration
+.env.ssl
+*.env
+
+# Local testing and build logs
+bandit_log.txt
+black_log.txt
+flake8_log.txt
+pytests_log.txt
+run-local-build-all.sh
+run-local-security-check.sh

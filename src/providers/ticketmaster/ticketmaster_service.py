@@ -297,7 +297,7 @@ def main():
 
     allow_all = os.getenv("TM_ALLOW_BIND_ALL", "false").lower() in ("1", "true", "yes")
 
-    # Fail safe: don’t bind to all interfaces unless explicitly allowed
+    # Fail safe: don't bind to all interfaces unless explicitly allowed
     if not allow_all and host in ("0.0.0.0", "::"):  # nosec B104
         logger.warning(
             "Binding to '%s' (all interfaces) is disabled by default. "
@@ -307,12 +307,38 @@ def main():
         )
         host = "127.0.0.1"
 
+    # SSL/HTTPS Configuration
+    ssl_enabled = os.getenv("TM_SSL_ENABLED", "false").lower() in ("1", "true", "yes")
+    ssl_config = {}
+
+    if ssl_enabled:
+        ssl_certfile = os.getenv("TM_SSL_CERT_PATH")
+        ssl_keyfile = os.getenv("TM_SSL_KEY_PATH")
+
+        if ssl_certfile and ssl_keyfile:
+            if os.path.exists(ssl_certfile) and os.path.exists(ssl_keyfile):
+                ssl_config = {
+                    "ssl_certfile": ssl_certfile,
+                    "ssl_keyfile": ssl_keyfile,
+                }
+                logger.info("HTTPS enabled for Ticketmaster service")
+            else:
+                logger.warning(
+                    "SSL certificates not found. Running without HTTPS. "
+                    "Expected cert: %s, key: %s",
+                    ssl_certfile,
+                    ssl_keyfile,
+                )
+        else:
+            logger.warning("SSL enabled but certificate paths not configured")
+
     uvicorn.run(
         "ticketmaster_service:create_app",
         host=host,
         port=port,
         reload=True,
         factory=True,
+        **ssl_config,
     )
 
 
