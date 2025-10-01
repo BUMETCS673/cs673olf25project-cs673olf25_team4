@@ -96,6 +96,7 @@ ssl/production/*.pem
 
 # SSL Certificate backups
 ssl/backups/
+ssl/dev/dev.backup/
 /etc/ssl/backups/
 
 # Environment files with SSL configuration
