@@ -30,7 +30,7 @@ function NLForm() {
         placeholder="e.g. Rock shows in Boston, June 10–15, Radiohead, Jazz…"
         style={{ fontSize: "18px", fontFamily: "inherit"}}
       />
-      <button className="btn" type="submit">Ask AI Agent</button>
+      <button className="btn" type="submit">Let's go!</button>
     </form>
   );
 }
