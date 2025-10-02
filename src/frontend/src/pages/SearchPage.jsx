@@ -14,13 +14,7 @@ function SearchPage() {
       <p className="tagline">
         Find concerts with structured search or ask our AI agent
       </p>
-
-      {/* Forms stacked vertically */}
-      <section className="form-section">
-        <h2>Search by Details</h2>
-        <SearchForm />
-      </section>
-
+      
       <section className="form-section">
         <h2>Ask AI</h2>
         <NLForm />
