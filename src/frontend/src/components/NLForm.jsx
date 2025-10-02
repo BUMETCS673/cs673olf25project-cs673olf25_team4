@@ -21,13 +21,14 @@ function NLForm() {
 
   return (
     <form onSubmit={handleSubmit}>
-      <label htmlFor="nlq">Natural language query</label>
+      <label htmlFor="nlq"></label>
       <textarea
         id="nlq"
         name="nlq"
         value={query}
         onChange={(e) => setQuery(e.target.value)}
-        placeholder="e.g. Show me jazz concerts in NYC this weekend"
+        placeholder="e.g. Rock shows in Boston, June 10–15, Radiohead, Jazz…"
+        style={{ fontSize: "18px", fontFamily: "inherit"}}
       />
       <button className="btn" type="submit">Ask AI Agent</button>
     </form>
