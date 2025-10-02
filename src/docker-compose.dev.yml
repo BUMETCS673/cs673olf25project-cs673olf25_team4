@@ -129,7 +129,7 @@ services:
       - "80:80"      # HTTP
       - "443:443"    # HTTPS
     volumes:
-      - ../ssl/dev:/etc/nginx/ssl/dev:ro  # Mount development SSL certificates (read-only)
+      - ../ssl/dev:/etc/nginx/ssl:ro  # Make certs available where Nginx expects them
     depends_on:
       - backend
     environment:
