@@ -14,4 +14,4 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY providers/groq /app
 
 # Each provider exposes its own FastAPI app in main.py
-CMD ["uvicorn", "groq_service:app", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["uvicorn", "groq_service:app", "--host", "0.0.0.0", "--port", "8003"]
