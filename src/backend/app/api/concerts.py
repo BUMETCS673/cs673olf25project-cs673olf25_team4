@@ -1,3 +1,5 @@
+"""Concert search and recommendation API endpoints."""
+
 import os
 from typing import Optional
 
@@ -16,7 +18,10 @@ logging.basicConfig(
 
 
 class ConcertsService:
+    """Service for handling concert search and AI-powered recommendations."""
+
     def __init__(self):
+        """Initialize the concerts service with provider configurations."""
         self.router = APIRouter(tags=["concerts"])
 
         # Register routes
@@ -58,6 +63,7 @@ class ConcertsService:
             logger.warning("SSL verification disabled for development environment")
 
     async def root(self):
+        """Return service health status."""
         return {
             "status": "ok",
             "message": "Backend is running. Main entry point for beatmap.",
@@ -73,6 +79,7 @@ class ConcertsService:
         ),
         keyword: Optional[str] = None,
     ):
+        """Search for concerts using the specified or default provider."""
         params = {
             "city": city,
             "start_date": start_date,
@@ -106,33 +113,38 @@ class ConcertsService:
                 return response.json()
         except httpx.HTTPStatusError as e:
             logger.error(
-                f"HTTP error from provider {provider}: "
+                f"HTTP error from provider {concert_data_provider}: "
                 f"{e.response.status_code} - {e.response.text}"
             )
-            raise HTTPException(
-                status_code=502,
-                detail=f"Provider {provider} returned error: {e.response.status_code}",
+            detail_msg = (
+                f"Provider {concert_data_provider} returned error: "
+                f"{e.response.status_code}"
             )
+            raise HTTPException(status_code=502, detail=detail_msg)
         except httpx.RequestError as e:
-            logger.error(f"Request error to provider {provider}: {str(e)}")
-            raise HTTPException(
-                status_code=502,
-                detail=f"Error connecting to provider {provider}: {str(e)}",
+            logger.error(
+                f"Request error to provider {concert_data_provider}: {str(e)}"
             )
+            detail_msg = (
+                f"Error connecting to provider {concert_data_provider}: {str(e)}"
+            )
+            raise HTTPException(status_code=502, detail=detail_msg)
         except Exception as e:
             logger.error(
-                f"Unexpected error fetching from provider {provider}: {str(e)}"
+                f"Unexpected error from provider {concert_data_provider}: {str(e)}"
             )
             raise HTTPException(
                 status_code=502, detail=f"Error fetching concert data: {e}"
             )
 
     def get_provider(self, requested=None):
+        """Get the requested provider or cycle to the next available one."""
         if requested:
             return requested
         return next(self._provider_cycle)
 
     def enrich_recommendations(self, recommendations, concert_results):
+        """Enrich AI recommendations with full concert event details."""
         # If concert_results is a list of dicts, convert to lookup by id
         if isinstance(concert_results, list):
             concert_lookup = {c["id"]: c for c in concert_results}
@@ -152,6 +164,7 @@ class ConcertsService:
         return {"recommendations": enriched}
 
     async def get_curated_concert_recommendations(self, user_input: str):
+        """Generate AI-curated concert recommendations based on user input."""
         logger.info(f"Generating recommendations for user input: {user_input}")
         client = GroqClient()
         logger.info(f"Using Groq provider at {client.base_url}")

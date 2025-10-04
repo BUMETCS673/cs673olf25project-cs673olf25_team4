@@ -1,9 +1,6 @@
-"""
-ticketmaster_service.py
+"""Main entry point for Ticketmaster concert data provider.
 
-Acts as the main entry point for Ticketmaster provider.
-Encapsulates routes inside TicketmasterService for consistency
-with other providers (e.g., JamBase).
+Encapsulates routes inside TicketmasterService for consistency with other providers.
 """
 
 from datetime import datetime
@@ -45,12 +42,14 @@ TM_KEY = os.getenv("TM_API_KEY")
 
 # ---------- Models ----------
 class PriceRange(BaseModel):
+    """Price range information for an event."""
     currency: Optional[str] = None
     min: Optional[float] = None
     max: Optional[float] = None
 
 
 class Venue(BaseModel):
+    """Venue information for an event."""
     id: Optional[str] = None
     name: Optional[str] = None
     city: Optional[str] = None
@@ -58,6 +57,7 @@ class Venue(BaseModel):
 
 
 class EventItem(BaseModel):
+    """Individual event information."""
     id: str
     name: Optional[str] = None
     url: Optional[str] = None
@@ -69,6 +69,7 @@ class EventItem(BaseModel):
 
 
 class EventSearchResponse(BaseModel):
+    """Paginated event search results."""
     totalElements: int
     page: int
     size: int
@@ -78,6 +79,7 @@ class EventSearchResponse(BaseModel):
 
 # ---------- Helpers ----------
 async def _tm_get(path: str, params: dict) -> dict:
+    """Make authenticated GET request to Ticketmaster API."""
     if not TM_KEY:
         raise HTTPException(500, "TM_API_KEY not configured")
 
@@ -101,6 +103,7 @@ async def _tm_get(path: str, params: dict) -> dict:
 
 
 def _parse_event(e: dict) -> EventItem:
+    """Parse Ticketmaster event data into EventItem model."""
     start = (e.get("dates") or {}).get("start", {}).get("dateTime")
     cls = (e.get("classifications") or [{}])[0]
     seg = (cls.get("segment") or {}).get("name")
@@ -137,7 +140,9 @@ def _parse_event(e: dict) -> EventItem:
 
 # ---------- Ticketmaster Service ----------
 class TicketmasterService:
+    """Ticketmaster concert data provider service."""
     def __init__(self):
+        """Initialize Ticketmaster service with API routes."""
         self.router = APIRouter()
 
         self.router.add_api_route("/", self.root, methods=["GET"], tags=["meta"])
@@ -157,12 +162,14 @@ class TicketmasterService:
         )
 
     async def root(self):
+        """Health check endpoint."""
         return {
             "status": "ok",
             "message": "Ticketmaster service is running.",
         }
 
     async def search_events(
+        """Search for events using Ticketmaster API."""
         self,
         keyword: Optional[str] = None,
         city: Optional[str] = None,
@@ -274,6 +281,7 @@ class TicketmasterService:
         )
 
     async def get_event(self, event_id: str):
+        """Get a single event by ID."""
         raw = await _tm_get(f"/events/{event_id}.json", {})
         return _parse_event(raw)
 

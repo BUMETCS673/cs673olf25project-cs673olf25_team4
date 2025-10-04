@@ -1,6 +1,6 @@
-"""
-Simple TDD Test for SSL Configuration
-Minimal Test-Driven Development example for SSL settings.
+"""Simple unit tests for SSL settings.
+
+Basic tests for SSL configuration loading and validation.
 """
 
 import pytest

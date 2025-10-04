@@ -1,11 +1,6 @@
-"""
-TDD Unit Tests for SSL Configuration
-Test-Driven Development approach for SSL settings and security features.
+"""TDD-style tests for SSL implementation.
 
-These tests follow TDD principles:
-1. Red: Write failing tests first
-2. Green: Write minimal code to pass tests
-3. Refactor: Improve code while keeping tests passing
+Test-driven development tests for SSL features.
 """
 
 import pytest

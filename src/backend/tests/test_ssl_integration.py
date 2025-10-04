@@ -1,7 +1,6 @@
-"""
-SSL Integration Tests for BeatMap Backend
+"""Integration tests for SSL/HTTPS functionality.
 
-Tests SSL configuration, security middleware, and HTTPS functionality.
+Tests end-to-end SSL configuration and security features.
 """
 
 import pytest

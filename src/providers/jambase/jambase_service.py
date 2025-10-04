@@ -1,9 +1,6 @@
-"""
-jambase_service.py
+"""Main entry point for JamBase concert data provider.
 
-Acts as the main entry point for JamBase provider.
-Encapsulates routes inside JambaseService for consistency
-with other providers (e.g., Ticketmaster).
+Encapsulates routes inside JambaseService for consistency with other providers.
 """
 
 from datetime import datetime
@@ -27,18 +24,21 @@ logger = logging.getLogger(__name__)
 
 # ---------- Models ----------
 class ConcertResponse(BaseModel):
+    """Response model for concert search results."""
     source: str
     parameters: List[Optional[str]]
     results: List[Dict[str, Any]]
 
 
 class PriceRange(BaseModel):
+    """Price range information for an event."""
     currency: Optional[str] = None
     min: Optional[float] = None
     max: Optional[float] = None
 
 
 class Venue(BaseModel):
+    """Venue information for an event."""
     id: Optional[str] = None
     name: Optional[str] = None
     city: Optional[str] = None
@@ -46,6 +46,7 @@ class Venue(BaseModel):
 
 
 class EventItem(BaseModel):
+    """Individual event information."""
     id: str
     name: Optional[str] = None
     url: Optional[str] = None
@@ -57,6 +58,7 @@ class EventItem(BaseModel):
 
 
 class EventSearchResponse(BaseModel):
+    """Paginated event search results."""
     totalElements: int
     page: int
     size: int
@@ -134,7 +136,9 @@ def format_date_yyyy_mm_dd(value: str) -> str:
 
 # ---------- Service ----------
 class JambaseService:
+    """JamBase concert data provider service."""
     def __init__(self):
+        """Initialize JamBase service with API routes."""
         self.router = APIRouter()
 
         self.router.add_api_route("/", self.root, methods=["GET"], tags=["meta"])

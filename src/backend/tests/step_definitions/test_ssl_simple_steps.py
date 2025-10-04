@@ -1,6 +1,6 @@
-"""
-Simple BDD Step Definitions for SSL Configuration
-Minimal implementation for pytest-bdd.
+"""BDD steps for basic SSL configuration testing.
+
+Tests fundamental SSL settings and certificate loading.
 """
 
 import pytest

@@ -1,5 +1,5 @@
-"""
-Module entry point for running the BeatMap backend.
+"""Module entry point for running the BeatMap backend.
+
 Allows the backend to be run with: python -m app
 """
 

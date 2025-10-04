@@ -1,6 +1,6 @@
-"""
-BDD Step Definitions for SSL Configuration Tests
-Using pytest-bdd to implement Given/When/Then steps for SSL feature scenarios.
+"""BDD steps for comprehensive SSL testing.
+
+Tests SSL certificates, HTTPS enforcement, and security configuration.
 """
 
 import pytest

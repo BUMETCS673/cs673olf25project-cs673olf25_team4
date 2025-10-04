@@ -1,7 +1,5 @@
-"""
-app/main.py
+"""Entry point for BeatMap backend with comprehensive HTTPS support.
 
-Entry point for BeatMap backend with comprehensive HTTPS support.
 Includes SSL configuration, security middleware, and enhanced CORS.
 """
 

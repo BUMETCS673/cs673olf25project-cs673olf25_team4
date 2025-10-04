@@ -1,5 +1,4 @@
-"""
-SSL/TLS Configuration Settings for BeatMap Backend
+"""SSL/TLS Configuration Settings for BeatMap Backend.
 
 Provides comprehensive SSL configuration including:
 - Certificate and key path management
@@ -207,10 +206,7 @@ class SSLSettings(BaseSettings):
         return self.environment.lower() in ["production", "prod"]
 
     def should_enforce_https(self) -> bool:
-        """
-        Determine if HTTPS should be enforced based on environment
-        and SSL settings.
-        """
+        """Determine if HTTPS should be enforced based on environment and SSL settings."""
         return self.ssl_enabled and self.force_https and not self.is_development()
 
     def log_configuration(self) -> None:

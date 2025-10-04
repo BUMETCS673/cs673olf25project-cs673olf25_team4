@@ -1,5 +1,4 @@
-"""
-Configuration management for BeatMap Backend
+"""Configuration management for BeatMap Backend.
 
 Loads environment variables and provides configuration classes.
 """

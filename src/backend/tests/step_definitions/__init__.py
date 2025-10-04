@@ -1,9 +1,4 @@
-"""
-BDD Step Definitions Package
+"""BDD test step definitions package.
 
-This package contains step definitions for Behavior-Driven Development (BDD) tests
-using pytest-bdd framework with Gherkin syntax.
-
-Step definitions connect the human-readable scenarios in .feature files
-to the actual test implementation code.
+Contains pytest-bdd step definitions for SSL and security testing.
 """

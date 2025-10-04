@@ -1,5 +1,4 @@
-"""
-Security Middleware for BeatMap Backend
+"""Security Middleware for BeatMap Backend.
 
 Provides comprehensive security middleware including:
 - HTTPS redirection middleware
@@ -23,6 +22,7 @@ class HTTPSRedirectMiddleware(BaseHTTPMiddleware):
     """Middleware to redirect HTTP requests to HTTPS."""
 
     def __init__(self, app: ASGIApp, ssl_settings: SSLSettings):
+        """Initialize HTTPS redirect middleware with SSL settings."""
         super().__init__(app)
         self.ssl_settings = ssl_settings
 
@@ -63,6 +63,7 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
     """Middleware to add security headers to all responses."""
 
     def __init__(self, app: ASGIApp, ssl_settings: SSLSettings):
+        """Initialize security headers middleware with SSL settings."""
         super().__init__(app)
         self.ssl_settings = ssl_settings
 
@@ -130,6 +131,7 @@ class RequestLoggingMiddleware(BaseHTTPMiddleware):
     """Middleware to log requests for security monitoring."""
 
     def __init__(self, app: ASGIApp, ssl_settings: SSLSettings):
+        """Initialize request logging middleware with SSL settings."""
         super().__init__(app)
         self.ssl_settings = ssl_settings
 
@@ -197,6 +199,7 @@ class RateLimitingMiddleware(BaseHTTPMiddleware):
     def __init__(
         self, app: ASGIApp, ssl_settings: SSLSettings, requests_per_minute: int = 100
     ):
+        """Initialize rate limiting middleware with request limits."""
         super().__init__(app)
         self.ssl_settings = ssl_settings
         self.requests_per_minute = requests_per_minute

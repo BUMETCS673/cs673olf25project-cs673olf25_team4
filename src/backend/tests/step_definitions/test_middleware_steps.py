@@ -1,6 +1,6 @@
-"""
-BDD Step Definitions for Security Middleware Tests
-Using pytest-bdd to implement Given/When/Then steps for middleware feature scenarios.
+"""BDD steps for security middleware testing.
+
+Tests security headers, HTTPS redirection, and middleware functionality.
 """
 
 import pytest
