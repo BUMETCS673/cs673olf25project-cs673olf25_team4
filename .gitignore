@@ -99,6 +99,9 @@ ssl/backups/
 ssl/dev/dev.backup/
 /etc/ssl/backups/
 
+# SSL test artifacts and temporary files
+ssl/tests/temp/
+
 # Environment files with SSL configuration
 .env.ssl
 *.env
