@@ -43,6 +43,7 @@ TM_KEY = os.getenv("TM_API_KEY")
 # ---------- Models ----------
 class PriceRange(BaseModel):
     """Price range information for an event."""
+
     currency: Optional[str] = None
     min: Optional[float] = None
     max: Optional[float] = None
@@ -50,6 +51,7 @@ class PriceRange(BaseModel):
 
 class Venue(BaseModel):
     """Venue information for an event."""
+
     id: Optional[str] = None
     name: Optional[str] = None
     city: Optional[str] = None
@@ -58,6 +60,7 @@ class Venue(BaseModel):
 
 class EventItem(BaseModel):
     """Individual event information."""
+
     id: str
     name: Optional[str] = None
     url: Optional[str] = None
@@ -70,6 +73,7 @@ class EventItem(BaseModel):
 
 class EventSearchResponse(BaseModel):
     """Paginated event search results."""
+
     totalElements: int
     page: int
     size: int
@@ -141,6 +145,7 @@ def _parse_event(e: dict) -> EventItem:
 # ---------- Ticketmaster Service ----------
 class TicketmasterService:
     """Ticketmaster concert data provider service."""
+
     def __init__(self):
         """Initialize Ticketmaster service with API routes."""
         self.router = APIRouter()
