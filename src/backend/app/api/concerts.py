@@ -138,6 +138,8 @@ class ConcertsService:
             city = ",".join(locations)
         else:
             city = locations[0]
+        city = None if city == "unknown" else city
+        logger.info(f"Using city: {city}")
 
         artists = tokens.get("artists", [None])
         if artists and len(artists) > 1:

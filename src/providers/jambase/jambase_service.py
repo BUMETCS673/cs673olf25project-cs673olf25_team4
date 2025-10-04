@@ -121,12 +121,15 @@ def jambase_parse_performers(performer_list):
     return [artist, lineup]
 
 
-def format_date_yyyy_mm_dd(value: str) -> str:
+def process_date(value: str) -> str:
     """
     Convert a ddMMyyyy string (e.g. 01012026) into yyyy-MM-dd.
+    Enforces dates can't be in past.
     """
     try:
         dt = datetime.strptime(value, "%d%m%Y")
+        if dt < datetime.now():
+            dt = datetime.now()
         return dt.strftime("%Y-%m-%d")
     except ValueError:
         raise HTTPException(400, f"Invalid date format: {value}, expected ddMMyyyy")
@@ -154,10 +157,10 @@ class JambaseService:
         self,
         city: Optional[str] = Query(None, description="City to search concerts for"),
         start_date: Optional[str] = Query(
-            None, description="Search start date (YYYY-MM-DD)"
+            None, description="Search start date (ddMMyyyy)"
         ),
         end_date: Optional[str] = Query(
-            None, description="Search end date (YYYY-MM-DD)"
+            None, description="Search end date (ddMMyyyy)"
         ),
         keyword: Optional[str] = Query(None, description="Search keyword"),
         page: int = 0,
@@ -168,10 +171,10 @@ class JambaseService:
             "keyword": None if keyword == "unknown" else keyword,
             "city": None if city == "unknown" else city,
             "startDateTime": (
-                None if start_date == "unknown" else format_date_yyyy_mm_dd(start_date)
+                None if (start_date == "unknown" or start_date is None) else process_date(start_date)
             ),
             "endDateTime": (
-                None if end_date == "unknown" else format_date_yyyy_mm_dd(end_date)
+                None if (end_date == "unknown" or end_date is None) else process_date(end_date)
             ),
             "page": page,
             "size": size,
