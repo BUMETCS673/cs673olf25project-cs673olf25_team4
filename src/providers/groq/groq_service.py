@@ -287,15 +287,18 @@ class GroqService:
                         "Given 'user_preferences' and a list of 'candidate_events', "
                         "you must return the top 3 recommended events. "
                         "If there are 3 or fewer candidate events, return all of them. "
-                        "Do NOT omit any valid event. Always return at least one recommendation.\n"
-                        "Respond **only with valid JSON**, no explanations or extra text. "
+                        "Do NOT omit any valid event."
+                        "Always return at least one recommendation.\n"
+                        "Respond **only with valid JSON**, "
+                        "no explanations or extra text. "
                         "Do not include markdown, code fences, or commentary.\n"
                         "The JSON must have this exact structure:\n"
                         '{"recommendations":['
                         '{"rank":1,"event_id":"...","reason":"..."},'
                         '{"rank":2,"event_id":"...","reason":"..."},'
                         '{"rank":3,"event_id":"...","reason":"..."}]}\n'
-                        "If there are fewer than 3 events, include only as many as exist. "
+                        "If there are fewer than 3 events, "
+                        "include only as many as exist. "
                         "Omit higher ranks instead of leaving them empty. "
                         "Never return an empty list for 'recommendations'."
                     ),

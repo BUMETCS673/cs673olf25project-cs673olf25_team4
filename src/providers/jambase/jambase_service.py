@@ -159,9 +159,7 @@ class JambaseService:
         start_date: Optional[str] = Query(
             None, description="Search start date (ddMMyyyy)"
         ),
-        end_date: Optional[str] = Query(
-            None, description="Search end date (ddMMyyyy)"
-        ),
+        end_date: Optional[str] = Query(None, description="Search end date (ddMMyyyy)"),
         keyword: Optional[str] = Query(None, description="Search keyword"),
         page: int = 0,
         size: int = 50,
@@ -171,10 +169,14 @@ class JambaseService:
             "keyword": None if keyword == "unknown" else keyword,
             "city": None if city == "unknown" else city,
             "startDateTime": (
-                None if (start_date == "unknown" or start_date is None) else process_date(start_date)
+                None
+                if (start_date == "unknown" or start_date is None)
+                else process_date(start_date)
             ),
             "endDateTime": (
-                None if (end_date == "unknown" or end_date is None) else process_date(end_date)
+                None
+                if (end_date == "unknown" or end_date is None)
+                else process_date(end_date)
             ),
             "page": page,
             "size": size,
