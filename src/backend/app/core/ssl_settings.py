@@ -206,7 +206,7 @@ class SSLSettings(BaseSettings):
         return self.environment.lower() in ["production", "prod"]
 
     def should_enforce_https(self) -> bool:
-        """Determine if HTTPS should be enforced based on environment and SSL settings."""
+        """Determine if HTTPS should be enforced based on environment."""
         return self.ssl_enabled and self.force_https and not self.is_development()
 
     def log_configuration(self) -> None:

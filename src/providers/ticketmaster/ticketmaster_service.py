@@ -169,7 +169,6 @@ class TicketmasterService:
         }
 
     async def search_events(
-        """Search for events using Ticketmaster API."""
         self,
         keyword: Optional[str] = None,
         city: Optional[str] = None,
@@ -180,6 +179,7 @@ class TicketmasterService:
         size: int = 20,
         sort: Optional[str] = None,
     ):
+        """Search for events using Ticketmaster API."""
         params = {
             "keyword": None if keyword == "unknown" else keyword,
             "city": None if city == "unknown" else city,

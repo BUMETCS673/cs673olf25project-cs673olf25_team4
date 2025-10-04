@@ -122,9 +122,7 @@ class ConcertsService:
             )
             raise HTTPException(status_code=502, detail=detail_msg)
         except httpx.RequestError as e:
-            logger.error(
-                f"Request error to provider {concert_data_provider}: {str(e)}"
-            )
+            logger.error(f"Request error to provider {concert_data_provider}: {str(e)}")
             detail_msg = (
                 f"Error connecting to provider {concert_data_provider}: {str(e)}"
             )

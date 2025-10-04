@@ -25,6 +25,7 @@ logger = logging.getLogger(__name__)
 
 class ConcertExtraction(BaseModel):
     """Model for extracted concert information from user input."""
+
     locations: List[str]
     start_date: str
     end_date: str
@@ -33,6 +34,7 @@ class ConcertExtraction(BaseModel):
 
 class TokenResponse(BaseModel):
     """Response model for token extraction endpoint."""
+
     locations: List[str]
     start_date: str
     end_date: str
@@ -41,6 +43,7 @@ class TokenResponse(BaseModel):
 
 class SummaryResponse(BaseModel):
     """Response model for AI summarization endpoint."""
+
     summary: str
     model: str
     prompt_tokens: Optional[int] = None
@@ -50,6 +53,7 @@ class SummaryResponse(BaseModel):
 
 class UserPreferences(BaseModel):
     """User music preferences for recommendations."""
+
     genres: List[str] = Field(
         default_factory=list, description="Preferred music genres"
     )
@@ -70,6 +74,7 @@ class UserPreferences(BaseModel):
 
 class UserPreferencesResponse(BaseModel):
     """Response model for user preferences extraction."""
+
     genres: List[str] = Field(
         default_factory=list, description="Preferred music genres"
     )
@@ -90,6 +95,7 @@ class UserPreferencesResponse(BaseModel):
 
 class Recommendation(BaseModel):
     """Single concert recommendation with ranking."""
+
     rank: int = Field(..., description="Ranking of this recommendation in the list")
     event_id: str = Field(
         ..., description="Unique identifier for the recommended event"
@@ -99,17 +105,20 @@ class Recommendation(BaseModel):
 
 class RecommendationsResponse(BaseModel):
     """Response model containing list of recommendations."""
+
     recommendations: List[Recommendation]
 
 
 class RecommendationsRequest(BaseModel):
     """Request model for generating recommendations."""
+
     user_preferences: UserPreferences
     events: List[dict]
 
 
 class GroqService:
     """Groq AI provider service for concert recommendations."""
+
     def __init__(self) -> None:
         """Initialize Groq service with API routes."""
         self.router = APIRouter()
