@@ -8,6 +8,28 @@ Acts as the client for interacting with the Groq provider API.
 import os
 import httpx
 from fastapi import HTTPException
+from pydantic import BaseModel, Field, field_validator
+from typing import List
+import logging
+
+
+class UserPreferences(BaseModel):
+    genres: List[str] = Field(
+        default_factory=list, description="Preferred music genres"
+    )
+    artists: List[str] = Field(default_factory=list, description="Preferred artists")
+    locations: List[str] = Field(
+        default_factory=list, description="Preferred locations"
+    )
+
+    @field_validator("genres", "artists", "locations", mode="before")
+    @classmethod
+    def _normalize_list(cls, v):
+        if v is None:
+            return []
+        if isinstance(v, list):
+            return [str(x) for x in v if x is not None]
+        return [str(v)]
 
 
 class GroqClient:
@@ -21,14 +43,45 @@ class GroqClient:
         self._client = client or httpx.AsyncClient()
 
     async def extract_tokens(self, user_input: str) -> dict:
+        logging.info(f"extract_tokens called with user_input: {user_input}")
         return await self._request(
             "GET",
-            "/get_tokens",
+            "/tokens",
             params={"user_input": user_input},
         )
 
+    async def get_user_preferences(self, user_input: str) -> dict:
+        return await self._request(
+            "GET",
+            "/preferences",
+            params={"user_input": user_input},
+        )
+
+    async def create_recommendations(
+        self, user_preferences: UserPreferences | dict, events: list
+    ) -> dict:
+        """
+        Forward preferences + events to the Groq service and return recommendations.
+        Expected response format:
+        {"recommendations": [{"rank": int, "event_id": str, "reason": str}, ...]}
+        """
+        # Ensure user_preferences is a UserPreferences object
+        if isinstance(user_preferences, dict):
+            user_preferences = UserPreferences(**user_preferences)
+
+        payload = {
+            "user_preferences": user_preferences.model_dump(),
+            "events": events,
+        }
+
+        return await self._request(
+            "POST",
+            "/recommendations",
+            json=payload,
+        )
+
     async def get_summary(self) -> dict:
-        return await self._request("GET", "/get_summary")
+        return await self._request("GET", "/summary")
 
     async def _request(self, method: str, path: str, **kwargs) -> dict:
         try:

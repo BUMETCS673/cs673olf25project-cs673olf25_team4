@@ -121,6 +121,17 @@ def jambase_parse_performers(performer_list):
     return [artist, lineup]
 
 
+def format_date_yyyy_mm_dd(value: str) -> str:
+    """
+    Convert a ddMMyyyy string (e.g. 01012026) into yyyy-MM-dd.
+    """
+    try:
+        dt = datetime.strptime(value, "%d%m%Y")
+        return dt.strftime("%Y-%m-%d")
+    except ValueError:
+        raise HTTPException(400, f"Invalid date format: {value}, expected ddMMyyyy")
+
+
 # ---------- Service ----------
 class JambaseService:
     def __init__(self):
@@ -152,9 +163,30 @@ class JambaseService:
         page: int = 0,
         size: int = 50,
     ):
+
+        params = {
+            "keyword": None if keyword == "unknown" else keyword,
+            "city": None if city == "unknown" else city,
+            "startDateTime": (
+                None if start_date == "unknown" else format_date_yyyy_mm_dd(start_date)
+            ),
+            "endDateTime": (
+                None if end_date == "unknown" else format_date_yyyy_mm_dd(end_date)
+            ),
+            "page": page,
+            "size": size,
+        }
+
+        logger.info("***********Raw search params: %s", params)
+
         """Query JamBase and return results in shared EventSearchResponse format."""
         try:
-            raw = await get_events(city, start_date, end_date, keyword)
+            raw = await get_events(
+                params["city"],
+                params["startDateTime"],
+                params["endDateTime"],
+                params["keyword"],
+            )
         except Exception as e:
             raise HTTPException(status_code=502, detail=f"JamBase upstream error: {e}")
 

@@ -174,18 +174,20 @@ class TicketmasterService:
         sort: Optional[str] = None,
     ):
         params = {
-            "keyword": keyword,
-            "city": city,
+            "keyword": None if keyword == "unknown" else keyword,
+            "city": None if city == "unknown" else city,
             "countryCode": country_code,
-            "startDateTime": start_date,
-            "endDateTime": end_date,
+            "startDateTime": None if start_date == "unknown" else start_date,
+            "endDateTime": None if end_date == "unknown" else end_date,
             "page": page,
             "size": size,
             "sort": sort,
             "classificationName": "Music",
         }
 
-        if params["startDateTime"] is not None:
+        logger.info("Raw search params: %s", params)
+
+        if params.get("startDateTime") is not None:
             try:
                 dt = datetime.fromisoformat(params["startDateTime"])
             except ValueError:
@@ -197,12 +199,16 @@ class TicketmasterService:
                             params["startDateTime"], "%Y-%m-%dT%H:%M"
                         )
                     except ValueError:
-                        raise HTTPException(400, "Invalid startDateTime format")
+                        try:
+                            dt = datetime.strptime(params["startDateTime"], "%d%m%Y")
+                        except ValueError:
+                            raise HTTPException(400, "Invalid startDateTime format")
+
             params["startDateTime"] = dt.replace(
                 tzinfo=ZoneInfo("America/New_York")
             ).isoformat()
 
-        if params["endDateTime"] is not None:
+        if params.get("endDateTime") is not None:
             try:
                 dt = datetime.fromisoformat(params["endDateTime"])
             except ValueError:
@@ -212,7 +218,11 @@ class TicketmasterService:
                     try:
                         dt = datetime.strptime(params["endDateTime"], "%Y-%m-%dT%H:%M")
                     except ValueError:
-                        raise HTTPException(400, "Invalid endDateTime format")
+                        try:
+                            dt = datetime.strptime(params["endDateTime"], "%d%m%Y")
+                        except ValueError:
+                            raise HTTPException(400, "Invalid endDateTime format")
+
             params["endDateTime"] = dt.replace(
                 tzinfo=ZoneInfo("America/New_York")
             ).isoformat()
@@ -221,20 +231,45 @@ class TicketmasterService:
 
         logger.info("Ticketmaster search with params: %s", clean_params)
 
-        raw = await _tm_get("/events.json", clean_params)
-        page_info = raw.get("page", {})
+        all_items = []
+        total_elements = 0
+        page_info = {}
+        next_link = None
 
-        items = [
-            _parse_event(e) for e in (raw.get("_embedded", {}).get("events") or [])
-        ]
+        # Handle multiple comma-separated keywords
+        keywords = (
+            [
+                kw.strip()
+                for kw in clean_params.get("keyword", "").split(",")
+                if kw.strip()
+            ]
+            if "keyword" in clean_params
+            else [None]
+        )
 
-        next_link = (raw.get("_links", {}) or {}).get("next", {}).get("href")
+        for kw in keywords:
+            # Create a copy of params with this keyword
+            query_params = dict(clean_params)
+            if kw:
+                query_params["keyword"] = kw
+
+            raw = await _tm_get("/events.json", query_params)
+            page_info = raw.get(
+                "page", {}
+            )  # overwritten, but fine if you just need last call
+            events = raw.get("_embedded", {}).get("events") or []
+
+            all_items.extend(_parse_event(e) for e in events)
+            total_elements += page_info.get("totalElements", 0)
+
+            # Keep next link if exists (from last keyword call)
+            next_link = (raw.get("_links", {}) or {}).get("next", {}).get("href")
 
         return EventSearchResponse(
-            totalElements=page_info.get("totalElements", 0),
+            totalElements=total_elements,
             page=page_info.get("number", page),
             size=page_info.get("size", size),
-            data=items,
+            data=all_items,
             next=next_link,
         )
 
@@ -263,7 +298,7 @@ def main():
     allow_all = os.getenv("TM_ALLOW_BIND_ALL", "false").lower() in ("1", "true", "yes")
 
     # Fail safe: don’t bind to all interfaces unless explicitly allowed
-    if not allow_all and host in ("0.0.0.0", "::"): # nosec B104
+    if not allow_all and host in ("0.0.0.0", "::"):  # nosec B104
         logger.warning(
             "Binding to '%s' (all interfaces) is disabled by default. "
             "Set TM_ALLOW_BIND_ALL=true to override. "
@@ -279,7 +314,6 @@ def main():
         reload=True,
         factory=True,
     )
-
 
 
 if __name__ == "__main__":
