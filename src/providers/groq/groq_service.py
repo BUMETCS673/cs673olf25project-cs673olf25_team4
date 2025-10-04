@@ -7,6 +7,7 @@ Acts as the main entry point for Groq provider.
 
 import os
 from typing import Optional
+from datetime import date
 
 import uvicorn
 from fastapi import FastAPI, HTTPException, APIRouter, Query
@@ -146,7 +147,7 @@ class GroqService:
         """
         Extract tokens (location, dates, artist) from user input about a music event.
         """
-        logger.info("Received token count request")
+        logger.info("Received token split request")
         client = self._ensure_client()
 
         chat_completion = await run_in_threadpool(
@@ -156,30 +157,42 @@ class GroqService:
                     "role": "system",
                     "content": (
                         "You are an extractor.\n"
+                        f"Today is {date.today().strftime('%d%m%Y')} (America/New_York).\n"
                         "Fields:\n"
                         "- locations: array of strings\n"
                         "- start_date: string\n"
                         "- end_date: string\n"
-                        "- artists: array of strings\n\n"
+                        "- artists: array of strings\n"
+                        "\n"
                         "Rules:\n"
-                        "- Dates must be formatted as ddMMyyyy (e.g., 05082025).\n"
+                        "- Dates use ddMMyyyy.\n"
                         "- One date → same start_date and end_date.\n"
                         "- Date range → set both explicitly.\n"
-                        "- Week → Monday as start_date, Sunday as end_date.\n"
-                        "  Examples: 'week 42 of 2025', 'week of 12 May 2026'.\n"
-                        "- Month+year → first to last day of month.\n"
+                        "- Week → Mon start, Sun end.\n"
+                        "- Month+year → first to last day.\n"
                         "- Year only → 0101YYYY to 3112YYYY.\n"
-                        '- If missing/unclear, set value to "unknown".\n'
-                        "- Respond with only valid JSON.\n"
-                        "  No explanations, no extra text.\n"
+                        "- If missing/unclear → \"unknown\".\n"
+                        "- All dates must be in the future. Never in the past.\n"
+                        "- start_date must be in the future. Never in the past.\n"
+                        "- end_date must be in the future. Never in the past.\n"
+                        "- Month with no year → next such month on/after today.\n"
+                        "- Season with no year → this season if ongoing, else next.\n"
+                        "- Vague periods (e.g., 'this summer', 'in July') assume "
+                        "  NEXT occurrence. Meaning in the FUTURE.\n"
+                        "- If a period began and is ongoing → start_date = today.\n"
+                        "- Respond with valid JSON only. No extra text.\n"
+                        "\n"
                         "Output:\n"
-                        "Exactly one JSON object, structured as:\n"
-                        '{"locations":["..."],"start_date":"...","end_date":"...","artists":["..."]}'  # noqa: E501
+                        "One JSON object exactly:\n"
+                        "{\"locations\":[\"...\"],"
+                        "\"start_date\":\"...\","
+                        "\"end_date\":\"...\","
+                        "\"artists\":[\"...\"]}"
                     ),
                 },
                 {"role": "user", "content": user_input},
             ],
-            model="moonshotai/kimi-k2-instruct-0905",
+            model="openai/gpt-oss-120b",
             temperature=0.0,
         )
 

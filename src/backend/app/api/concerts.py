@@ -137,21 +137,23 @@ class ConcertsService:
         if locations and len(locations) > 1:
             city = ",".join(locations)
         else:
-            city = locations[0]
+            city = locations
         city = None if city == "unknown" else city
         logger.info(f"Using city: {city}")
 
         artists = tokens.get("artists", [None])
-        if artists and len(artists) > 1:
-            artist = ",".join(artists)
+        genres = user_preferences.get("genres", [])
+        keywords = artists + genres
+        if keywords and len(keywords) > 1:
+            keywords = ",".join(keywords)
         else:
-            artist = artists[0]
+            keywords = keywords[0]
 
         client_params = {
             "city": city,
             "start_date": tokens.get("start_date"),
             "end_date": tokens.get("end_date"),
-            "keyword": artist,
+            "keyword": keywords,
             "concert_data_provider": None,
         }
         # get concert data

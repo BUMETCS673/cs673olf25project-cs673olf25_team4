@@ -8,6 +8,7 @@ with other providers (e.g., JamBase).
 
 from datetime import datetime
 import os
+import time
 from typing import List, Optional
 
 import httpx
@@ -256,8 +257,10 @@ class TicketmasterService:
             raw = await _tm_get("/events.json", query_params)
             page_info = raw.get(
                 "page", {}
-            )  # overwritten, but fine if you just need last call
+            )
+            time.sleep(0.25)  # to avoid hitting rate limits
             events = raw.get("_embedded", {}).get("events") or []
+            logger.info("Ticketmaster returned %d events for keyword '%s'", len(events), kw)
 
             all_items.extend(_parse_event(e) for e in events)
             total_elements += page_info.get("totalElements", 0)
