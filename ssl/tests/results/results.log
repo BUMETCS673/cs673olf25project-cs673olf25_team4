@@ -1,0 +1,10 @@
+PASS: validate_certificate_file(valid) - Function correctly validates valid certificate
+PASS: validate_certificate_file(invalid) - Function correctly rejects invalid certificate
+PASS: validate_certificate_file(missing) - Function correctly handles missing certificate
+PASS: validate_private_key_file(valid) - Function correctly validates valid private key
+PASS: validate_private_key_file(invalid) - Function correctly rejects invalid private key
+PASS: certificate_key_match(valid) - Function correctly identifies matching cert/key pair
+PASS: certificate_key_match(invalid) - Function correctly identifies non-matching cert/key pair
+PASS: certificate_not_expired(valid) - Function correctly identifies non-expired certificate
+PASS: get_certificate_expiry_days(valid) - Function returns valid expiry days (364)
+PASS: certificate_not_expired(missing) - Function correctly handles missing certificate

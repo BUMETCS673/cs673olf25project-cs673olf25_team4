@@ -5,7 +5,8 @@ ENV PYTHONUNBUFFERED=1
 
 WORKDIR /app
 
-RUN apk add --no-cache gcc musl-dev libffi-dev
+# Install system dependencies including openssl for SSL certificate handling
+RUN apk add --no-cache gcc musl-dev libffi-dev openssl
 
 COPY providers/jambase/requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
@@ -16,5 +17,9 @@ COPY providers/jambase /app
 # Copy backend code
 COPY backend /app/backend
 
+# Create SSL certificate directory
+RUN mkdir -p /app/ssl
+
 # Each provider exposes its own FastAPI app in jambase_service.py
+# Default to HTTP, can be overridden with environment variables and volume mounts
 CMD ["uvicorn", "jambase_service:app", "--host", "0.0.0.0", "--port", "8002"]

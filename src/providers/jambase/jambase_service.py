@@ -1,9 +1,6 @@
-"""
-jambase_service.py
+"""Main entry point for JamBase concert data provider.
 
-Acts as the main entry point for JamBase provider.
-Encapsulates routes inside JambaseService for consistency
-with other providers (e.g., Ticketmaster).
+Encapsulates routes inside JambaseService for consistency with other providers.
 """
 
 from datetime import datetime
@@ -27,18 +24,24 @@ logger = logging.getLogger(__name__)
 
 # ---------- Models ----------
 class ConcertResponse(BaseModel):
+    """Response model for concert search results."""
+
     source: str
     parameters: List[Optional[str]]
     results: List[Dict[str, Any]]
 
 
 class PriceRange(BaseModel):
+    """Price range information for an event."""
+
     currency: Optional[str] = None
     min: Optional[float] = None
     max: Optional[float] = None
 
 
 class Venue(BaseModel):
+    """Venue information for an event."""
+
     id: Optional[str] = None
     name: Optional[str] = None
     city: Optional[str] = None
@@ -46,6 +49,8 @@ class Venue(BaseModel):
 
 
 class EventItem(BaseModel):
+    """Individual event information."""
+
     id: str
     name: Optional[str] = None
     url: Optional[str] = None
@@ -57,6 +62,8 @@ class EventItem(BaseModel):
 
 
 class EventSearchResponse(BaseModel):
+    """Paginated event search results."""
+
     totalElements: int
     page: int
     size: int
@@ -134,7 +141,10 @@ def format_date_yyyy_mm_dd(value: str) -> str:
 
 # ---------- Service ----------
 class JambaseService:
+    """JamBase concert data provider service."""
+
     def __init__(self):
+        """Initialize JamBase service with API routes."""
         self.router = APIRouter()
 
         self.router.add_api_route("/", self.root, methods=["GET"], tags=["meta"])
@@ -302,12 +312,42 @@ def main():
         )
         host = "127.0.0.1"
 
+    # SSL/HTTPS Configuration
+    ssl_enabled = os.getenv("JAMBASE_SSL_ENABLED", "false").lower() in (
+        "1",
+        "true",
+        "yes",
+    )
+    ssl_config = {}
+
+    if ssl_enabled:
+        ssl_certfile = os.getenv("JAMBASE_SSL_CERT_PATH")
+        ssl_keyfile = os.getenv("JAMBASE_SSL_KEY_PATH")
+
+        if ssl_certfile and ssl_keyfile:
+            if os.path.exists(ssl_certfile) and os.path.exists(ssl_keyfile):
+                ssl_config = {
+                    "ssl_certfile": ssl_certfile,
+                    "ssl_keyfile": ssl_keyfile,
+                }
+                logger.info("HTTPS enabled for Jambase service")
+            else:
+                logger.warning(
+                    "SSL certificates not found. Running without HTTPS. "
+                    "Expected cert: %s, key: %s",
+                    ssl_certfile,
+                    ssl_keyfile,
+                )
+        else:
+            logger.warning("SSL enabled but certificate paths not configured")
+
     uvicorn.run(
         "jambase_service:create_app",
         host=host,
         port=port,
         reload=True,
         factory=True,
+        **ssl_config,
     )
 
 

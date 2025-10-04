@@ -1,3 +1,5 @@
+"""Concert search and recommendation API endpoints."""
+
 import os
 from typing import Optional
 
@@ -16,7 +18,10 @@ logging.basicConfig(
 
 
 class ConcertsService:
+    """Service for handling concert search and AI-powered recommendations."""
+
     def __init__(self):
+        """Initialize the concerts service with provider configurations."""
         self.router = APIRouter(tags=["concerts"])
 
         # Register routes
@@ -31,13 +36,15 @@ class ConcertsService:
             tags=["concerts"],
         )
 
-        # Provider URLs from env
+        # Provider URLs from env (support both old and new variable names)
         self.concert_data_providers = {
             "jambase": os.getenv(
-                "JAMBASE_PROVIDER_URL", "http://jambase_provider:8000"
+                "JAMBASE_API_URL",
+                os.getenv("JAMBASE_PROVIDER_URL", "http://jambase_provider:8002"),
             ),
             "ticketmaster": os.getenv(
-                "TM_PROVIDER_URL", "http://ticketmaster_provider:8000"
+                "TICKETMASTER_API_URL",
+                os.getenv("TM_PROVIDER_URL", "http://ticketmaster_provider:8001"),
             ),
         }
 
@@ -47,7 +54,16 @@ class ConcertsService:
 
         self._provider_cycle = cycle(self.concert_data_providers.keys())
 
+        # Determine if we should verify SSL certificates
+        # In development with self-signed certs, we disable verification
+        environment = os.getenv("ENVIRONMENT", "development").lower()
+        self.verify_ssl = environment in ["production", "prod", "staging"]
+
+        if not self.verify_ssl:
+            logger.warning("SSL verification disabled for development environment")
+
     async def root(self):
+        """Return service health status."""
         return {
             "status": "ok",
             "message": "Backend is running. Main entry point for beatmap.",
@@ -63,6 +79,7 @@ class ConcertsService:
         ),
         keyword: Optional[str] = None,
     ):
+        """Search for concerts using the specified or default provider."""
         params = {
             "city": city,
             "start_date": start_date,
@@ -84,24 +101,48 @@ class ConcertsService:
         logger.info(f"Using provider: {concert_data_provider}")
         try:
             clean = {k: v for k, v in params.items() if v is not None}
-            async with httpx.AsyncClient(timeout=20.0) as client:
+            # Create HTTP client with appropriate SSL verification
+            async with httpx.AsyncClient(
+                timeout=20.0, verify=self.verify_ssl
+            ) as client:
                 response = await client.get(
                     f"{self.concert_data_providers[concert_data_provider]}/search",
                     params=clean,
                 )
                 response.raise_for_status()
                 return response.json()
+        except httpx.HTTPStatusError as e:
+            logger.error(
+                f"HTTP error from provider {concert_data_provider}: "
+                f"{e.response.status_code} - {e.response.text}"
+            )
+            detail_msg = (
+                f"Provider {concert_data_provider} returned error: "
+                f"{e.response.status_code}"
+            )
+            raise HTTPException(status_code=502, detail=detail_msg)
+        except httpx.RequestError as e:
+            logger.error(f"Request error to provider {concert_data_provider}: {str(e)}")
+            detail_msg = (
+                f"Error connecting to provider {concert_data_provider}: {str(e)}"
+            )
+            raise HTTPException(status_code=502, detail=detail_msg)
         except Exception as e:
+            logger.error(
+                f"Unexpected error from provider {concert_data_provider}: {str(e)}"
+            )
             raise HTTPException(
                 status_code=502, detail=f"Error fetching concert data: {e}"
             )
 
     def get_provider(self, requested=None):
+        """Get the requested provider or cycle to the next available one."""
         if requested:
             return requested
         return next(self._provider_cycle)
 
     def enrich_recommendations(self, recommendations, concert_results):
+        """Enrich AI recommendations with full concert event details."""
         # If concert_results is a list of dicts, convert to lookup by id
         if isinstance(concert_results, list):
             concert_lookup = {c["id"]: c for c in concert_results}
@@ -121,6 +162,7 @@ class ConcertsService:
         return {"recommendations": enriched}
 
     async def get_curated_concert_recommendations(self, user_input: str):
+        """Generate AI-curated concert recommendations based on user input."""
         logger.info(f"Generating recommendations for user input: {user_input}")
         client = GroqClient()
         logger.info(f"Using Groq provider at {client.base_url}")

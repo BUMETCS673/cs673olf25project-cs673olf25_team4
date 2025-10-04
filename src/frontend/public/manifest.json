@@ -1,0 +1,42 @@
+{
+  "short_name": "BeatMap",
+  "name": "BeatMap - Concert Discovery Platform",
+  "description": "Discover concerts and live music events near you",
+  "icons": [
+    {
+      "src": "favicon.ico",
+      "sizes": "64x64 32x32 24x24 16x16",
+      "type": "image/x-icon"
+    },
+    {
+      "src": "icon-192x192.png",
+      "type": "image/png",
+      "sizes": "192x192",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "icon-512x512.png",
+      "type": "image/png",
+      "sizes": "512x512",
+      "purpose": "any maskable"
+    }
+  ],
+  "start_url": "/",
+  "display": "standalone",
+  "theme_color": "#000000",
+  "background_color": "#ffffff",
+  "orientation": "portrait-primary",
+  "categories": ["music", "entertainment", "lifestyle"],
+  "prefer_related_applications": false,
+  "scope": "/",
+  "lang": "en-US",
+  "dir": "ltr",
+  "protocol_handlers": [
+    {
+      "protocol": "web+beatmap",
+      "url": "/?concert=%s"
+    }
+  ],
+  "related_applications": [],
+  "screenshots": []
+}

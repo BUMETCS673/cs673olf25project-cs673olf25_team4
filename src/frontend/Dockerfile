@@ -20,15 +20,30 @@ RUN npm run build
 # ---- Production Stage ----
 FROM nginx:alpine
 
-# Copy custom nginx server config into conf.d (don't replace the global nginx.conf)
-# The provided nginx.conf contains a server block and should live in conf.d
-COPY nginx.conf /etc/nginx/conf.d/default.conf
+# Remove default site to prevent server_name conflicts
+RUN rm -f /etc/nginx/conf.d/default.conf
+
+# Install openssl for SSL certificate handling
+RUN apk add --no-cache openssl
+
+# Copy custom nginx configurations
+# nginx.conf is for HTTP, nginx-ssl.conf is for HTTPS
+COPY nginx.conf /etc/nginx/conf.d/http.conf
+COPY nginx-ssl.conf /etc/nginx/conf.d/https.conf.template
 
 # Copy built assets from build stage
 COPY --from=build /app/dist /usr/share/nginx/html
 
-# Expose port 80
-EXPOSE 80
+# Create SSL certificate directory
+RUN mkdir -p /etc/nginx/ssl
 
-# Start nginx
-CMD ["nginx", "-g", "daemon off;"]
+# Copy and set up entrypoint script
+COPY docker-entrypoint.sh /docker-entrypoint.sh
+# Normalize line endings (works even if dos2unix is absent)
+RUN sed -i 's/\r$//' /docker-entrypoint.sh && chmod +x /docker-entrypoint.sh
+
+# Expose ports 80 (HTTP) and 443 (HTTPS)
+EXPOSE 80 443
+
+# Use custom entrypoint
+ENTRYPOINT ["/docker-entrypoint.sh"]
