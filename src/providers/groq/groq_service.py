@@ -157,7 +157,8 @@ class GroqService:
                     "role": "system",
                     "content": (
                         "You are an extractor.\n"
-                        f"Today is {date.today().strftime('%d%m%Y')} (America/New_York).\n"
+                        f"Today is {date.today().strftime('%d%m%Y')} "
+                        "(America/New_York).\n"
                         "Fields:\n"
                         "- locations: array of strings\n"
                         "- start_date: string\n"
@@ -171,7 +172,7 @@ class GroqService:
                         "- Week → Mon start, Sun end.\n"
                         "- Month+year → first to last day.\n"
                         "- Year only → 0101YYYY to 3112YYYY.\n"
-                        "- If missing/unclear → \"unknown\".\n"
+                        '- If missing/unclear → "unknown".\n'
                         "- All dates must be in the future. Never in the past.\n"
                         "- start_date must be in the future. Never in the past.\n"
                         "- end_date must be in the future. Never in the past.\n"
@@ -184,10 +185,10 @@ class GroqService:
                         "\n"
                         "Output:\n"
                         "One JSON object exactly:\n"
-                        "{\"locations\":[\"...\"],"
-                        "\"start_date\":\"...\","
-                        "\"end_date\":\"...\","
-                        "\"artists\":[\"...\"]}"
+                        '{"locations":["..."],'
+                        '"start_date":"...",'
+                        '"end_date":"...",'
+                        '"artists":["..."]}'
                     ),
                 },
                 {"role": "user", "content": user_input},
