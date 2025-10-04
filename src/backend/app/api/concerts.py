@@ -5,6 +5,7 @@ import httpx
 from fastapi import APIRouter, Query, HTTPException
 from itertools import cycle
 import logging
+from ..core.groq_client import GroqClient
 
 logger = logging.getLogger(__name__)
 
@@ -23,9 +24,15 @@ class ConcertsService:
         self.router.add_api_route(
             "/search", self.search, methods=["GET"], tags=["concerts"]
         )
+        self.router.add_api_route(
+            "/recommendations",
+            self.get_curated_concert_recommendations,
+            methods=["GET"],
+            tags=["concerts"],
+        )
 
         # Provider URLs from env
-        self.providers = {
+        self.concert_data_providers = {
             "jambase": os.getenv(
                 "JAMBASE_PROVIDER_URL", "http://jambase_provider:8000"
             ),
@@ -34,7 +41,11 @@ class ConcertsService:
             ),
         }
 
-        self._provider_cycle = cycle(self.providers.keys())
+        self.ai_prroviders = {
+            "groq": os.getenv("GROQ_PROVIDER_URL", "http://groq_provider:8003"),
+        }
+
+        self._provider_cycle = cycle(self.concert_data_providers.keys())
 
     async def root(self):
         return {
@@ -47,7 +58,7 @@ class ConcertsService:
         city: str = Query(None, description="City to search concerts in."),
         start_date: str = Query(None, description="Start date YYYY-MM-DD"),
         end_date: str = Query(None, description="End date YYYY-MM-DD"),
-        provider: str = Query(
+        concert_data_provider: str = Query(
             None, description="Provider to search (jambase, ticketmaster)"
         ),
         keyword: Optional[str] = None,
@@ -60,20 +71,23 @@ class ConcertsService:
         }
         logger.info(f"Search request params: {params}")
 
-        if provider is None:
-            provider = self.get_provider()
+        if concert_data_provider is None:
+            concert_data_provider = self.get_provider()
         else:
-            provider = provider.lower()
+            concert_data_provider = concert_data_provider.lower()
 
-        if provider not in self.providers:
-            raise HTTPException(status_code=400, detail=f"Unknown provider: {provider}")
+        if concert_data_provider not in self.concert_data_providers:
+            raise HTTPException(
+                status_code=400, detail=f"Unknown provider: {concert_data_provider}"
+            )
 
-        logger.info(f"Using provider: {provider}")
+        logger.info(f"Using provider: {concert_data_provider}")
         try:
             clean = {k: v for k, v in params.items() if v is not None}
             async with httpx.AsyncClient(timeout=20.0) as client:
                 response = await client.get(
-                    f"{self.providers[provider]}/search", params=clean
+                    f"{self.concert_data_providers[concert_data_provider]}/search",
+                    params=clean,
                 )
                 response.raise_for_status()
                 return response.json()
@@ -86,3 +100,70 @@ class ConcertsService:
         if requested:
             return requested
         return next(self._provider_cycle)
+
+    def enrich_recommendations(self, recommendations, concert_results):
+        # If concert_results is a list of dicts, convert to lookup by id
+        if isinstance(concert_results, list):
+            concert_lookup = {c["id"]: c for c in concert_results}
+        else:
+            concert_lookup = concert_results  # assume already a dict
+
+        enriched = []
+        for rec in recommendations["recommendations"]:
+            event = concert_lookup.get(rec["event_id"])
+            enriched.append(
+                {
+                    "rank": rec["rank"],
+                    "event": event,  # replace event_id with actual event object
+                    "reason": rec["reason"],
+                }
+            )
+        return {"recommendations": enriched}
+
+    async def get_curated_concert_recommendations(self, user_input: str):
+        logger.info(f"Generating recommendations for user input: {user_input}")
+        client = GroqClient()
+        logger.info(f"Using Groq provider at {client.base_url}")
+
+        # get tokens
+        tokens = await client.extract_tokens(user_input=user_input)
+        logger.info(f"Extracted tokens: {tokens}")
+
+        # get user preferences
+        user_preferences = await client.get_user_preferences(user_input=user_input)
+        logger.info(f"Extracted user preferences: {user_preferences}")
+
+        locations = tokens.get("locations", [None])
+        if locations and len(locations) > 1:
+            city = ",".join(locations)
+        else:
+            city = locations[0]
+
+        artists = tokens.get("artists", [None])
+        if artists and len(artists) > 1:
+            artist = ",".join(artists)
+        else:
+            artist = artists[0]
+
+        client_params = {
+            "city": city,
+            "start_date": tokens.get("start_date"),
+            "end_date": tokens.get("end_date"),
+            "keyword": artist,
+            "concert_data_provider": None,
+        }
+        # get concert data
+        concert_results = await self.search(**client_params)
+        logger.info(
+            f"Fetched concert results, a total of:\
+              {len(concert_results.get('data', []))} events"
+        )
+
+        # get recommendations
+        recommendations = await client.create_recommendations(
+            user_preferences=user_preferences,
+            events=concert_results.get("data", []),
+        )
+        return self.enrich_recommendations(
+            recommendations, concert_results.get("data", [])
+        )

@@ -10,11 +10,13 @@ from typing import Optional
 
 import uvicorn
 from fastapi import FastAPI, HTTPException, APIRouter, Query
-from pydantic import BaseModel, ValidationError
+from pydantic import BaseModel, ValidationError, Field, field_validator
 from groq import Groq
 from starlette.concurrency import run_in_threadpool
+from typing import List
 
 import logging
+import json
 
 logging.basicConfig(
     level=logging.INFO,
@@ -24,17 +26,17 @@ logger = logging.getLogger(__name__)
 
 
 class ConcertExtraction(BaseModel):
-    location: str
+    locations: List[str]
     start_date: str
     end_date: str
-    artist: str
+    artists: List[str]
 
 
 class TokenResponse(BaseModel):
-    location: str
+    locations: List[str]
     start_date: str
     end_date: str
-    artist: str
+    artists: List[str]
 
 
 class SummaryResponse(BaseModel):
@@ -43,6 +45,61 @@ class SummaryResponse(BaseModel):
     prompt_tokens: Optional[int] = None
     completion_tokens: Optional[int] = None
     total_tokens: Optional[int] = None
+
+
+class UserPreferences(BaseModel):
+    genres: List[str] = Field(
+        default_factory=list, description="Preferred music genres"
+    )
+    artists: List[str] = Field(default_factory=list, description="Preferred artists")
+    locations: List[str] = Field(
+        default_factory=list, description="Preferred locations"
+    )
+
+    @field_validator("genres", "artists", "locations", mode="before")
+    @classmethod
+    def _normalize_list(cls, v):
+        if v is None:
+            return []
+        if isinstance(v, list):
+            return [str(x) for x in v if x is not None]
+        return [str(v)]
+
+
+class UserPreferencesResponse(BaseModel):
+    genres: List[str] = Field(
+        default_factory=list, description="Preferred music genres"
+    )
+    artists: List[str] = Field(default_factory=list, description="Preferred artists")
+    locations: List[str] = Field(
+        default_factory=list, description="Preferred locations"
+    )
+
+    @field_validator("genres", "artists", "locations", mode="before")
+    @classmethod
+    def _normalize_list(cls, v):
+        if v is None:
+            return []
+        if isinstance(v, list):
+            return [str(x) for x in v if x is not None]
+        return [str(v)]
+
+
+class Recommendation(BaseModel):
+    rank: int = Field(..., description="Ranking of this recommendation in the list")
+    event_id: str = Field(
+        ..., description="Unique identifier for the recommended event"
+    )
+    reason: str = Field(..., description="Explanation of why this event is recommended")
+
+
+class RecommendationsResponse(BaseModel):
+    recommendations: List[Recommendation]
+
+
+class RecommendationsRequest(BaseModel):
+    user_preferences: UserPreferences
+    events: List[dict]
 
 
 class GroqService:
@@ -57,23 +114,35 @@ class GroqService:
             methods=["GET"],
         )
         self.router.add_api_route(
-            "/get_tokens",
-            self.get_tokens,
+            "/tokens",
+            self.tokens,
             methods=["GET"],
             response_model=TokenResponse,
         )
         self.router.add_api_route(
-            "/get_summary",
-            self.get_summary,
+            "/summary",
+            self.summary,
             methods=["GET"],
             response_model=SummaryResponse,
+        )
+        self.router.add_api_route(
+            "/preferences",
+            self.preferences,
+            methods=["GET"],
+            response_model=UserPreferencesResponse,
+        )
+        self.router.add_api_route(
+            "/recommendations",
+            self.recommendations,
+            methods=["POST"],
+            response_model=RecommendationsResponse,
         )
 
     async def root(self):
         """Health check endpoint."""
         return {"status": "ok", "message": "Groq service is running."}
 
-    async def get_tokens(self, user_input: str = Query(...)) -> TokenResponse:
+    async def tokens(self, user_input: str = Query(...)) -> TokenResponse:
         """
         Extract tokens (location, dates, artist) from user input about a music event.
         """
@@ -88,30 +157,29 @@ class GroqService:
                     "content": (
                         "You are an extractor.\n"
                         "Fields:\n"
-                        "- location\n"
-                        "- start_date\n"
-                        "- end_date\n"
-                        "- artist\n\n"
+                        "- locations: array of strings\n"
+                        "- start_date: string\n"
+                        "- end_date: string\n"
+                        "- artists: array of strings\n\n"
                         "Rules:\n"
-                        "- Dates: ddMMyyyy (e.g., 05082025).\n"
-                        "- One date → same start/end.\n"
-                        "- Date range → set both.\n"
-                        "- Week → Mon as start, Sun as end.\n"
+                        "- Dates must be formatted as ddMMyyyy (e.g., 05082025).\n"
+                        "- One date → same start_date and end_date.\n"
+                        "- Date range → set both explicitly.\n"
+                        "- Week → Monday as start_date, Sunday as end_date.\n"
                         "  Examples: 'week 42 of 2025', 'week of 12 May 2026'.\n"
-                        "- Month+year → first to last day.\n"
+                        "- Month+year → first to last day of month.\n"
                         "- Year only → 0101YYYY to 3112YYYY.\n"
-                        '- Missing/unclear → "unknown".\n'
-                        "- No extra details allowed.\n\n"
+                        '- If missing/unclear, set value to "unknown".\n'
+                        "- Respond with only valid JSON.\n"
+                        "  No explanations, no extra text.\n"
                         "Output:\n"
-                        "- Exactly one JSON line.\n"
-                        "- Only the tokens, nothing else.\n"
-                        '{"location":"...","start_date":"...",\n'
-                        '"end_date":"...","artist":"..."}'
+                        "Exactly one JSON object, structured as:\n"
+                        '{"locations":["..."],"start_date":"...","end_date":"...","artists":["..."]}'  # noqa: E501
                     ),
                 },
                 {"role": "user", "content": user_input},
             ],
-            model="groq/compound",
+            model="moonshotai/kimi-k2-instruct-0905",
             temperature=0.0,
         )
 
@@ -130,7 +198,7 @@ class GroqService:
                 artist="unknown",
             )
 
-    async def get_summary(self) -> SummaryResponse:
+    async def summary(self) -> SummaryResponse:
         """
         Summarization endpoint (stub).
         """
@@ -138,65 +206,134 @@ class GroqService:
         # TODO: Implement summarization
         raise HTTPException(status_code=501, detail="Not implemented yet")
 
+    async def preferences(
+        self, user_input: str = Query(...)
+    ) -> UserPreferencesResponse:
+        logger.info("Received user preferences request")
+        client = self._ensure_client()
+
+        chat_completion = await run_in_threadpool(
+            client.chat.completions.create,
+            messages=[
+                {
+                    "role": "system",
+                    "content": (
+                        "You are an intent-to-preferences extractor.\n"
+                        "Your task is to analyze the user's input and"
+                        "extract their music preferences.\n"
+                        "Output a JSON object with three fields:"
+                        "genres, artists, and locations.\n"
+                        "You should infer genres from"
+                        "mentioned artists when possible.\n"
+                        "You can add genres that are commonly"
+                        "associated with the identified artists.\n"
+                        "If locations are not explicitly mentioned,"
+                        "you may suggest locations where "
+                        "concerts featuring the identified artists "
+                        "are commonly held. Or locations where\n"
+                        "artists will be playing in the next year.\n"
+                        "If no preferences can be determined, "
+                        "return empty arrays for each field.\n"
+                        "Extract user preferences into JSON "
+                        "with the following fields:\n"
+                        "  - genres: array of strings\n"
+                        "  - artists: array of strings\n"
+                        "  - locations: array of strings\n"
+                        "Rules:\n"
+                        "- If a field is missing or unclear, return an empty array.\n"
+                        "- Output must be a single valid JSON object only.\n"
+                        "- Do not include any explanations, text, "
+                        "or formatting outside of the JSON.\n"
+                        "Format strictly as:\n"
+                        '{"genres":["..."],"artists":["..."],"locations":["..."]}'
+                    ),
+                },
+                {"role": "user", "content": user_input},
+            ],
+            model="moonshotai/kimi-k2-instruct-0905",
+            temperature=0.5,
+        )
+
+        content = chat_completion.choices[0].message.content.strip()
+        logger.debug(f"Model raw output: {content}")
+
+        try:
+            data = UserPreferencesResponse.model_validate_json(content, strict=False)
+            return data
+        except ValidationError:
+            logger.warning(
+                "Schema validation failed for user preferences output: %s", content
+            )
+            return UserPreferencesResponse(genres=[], artists=[], locations=[])
+
+    async def recommendations(
+        self, payload: RecommendationsRequest
+    ) -> RecommendationsResponse:
+        """
+        Receive userpreferences and events encapsulated in payload,
+        compose list of recommended events
+        """
+        logger.info("Received recommendations request")
+        client = self._ensure_client()
+
+        payload_dict = payload.model_dump()
+        chat_completion = await run_in_threadpool(
+            client.chat.completions.create,
+            messages=[
+                {
+                    "role": "system",
+                    "content": (
+                        "You are a concert recommendation engine. "
+                        "Given user_preferences and a list of candidate events,"
+                        "return the top 3 recommendations. "
+                        "You must respond **with only valid JSON**, "
+                        "no explanations, no extra text. "
+                        "The JSON object must be structured exactly like this:\n"
+                        '{"recommendations":[{"rank":1,"event_id":"...","reason":"..."},{"rank":2,"event_id":"...","reason":"..."},{"rank":3,"event_id":"...","reason":"..."}]}'  # noqa: E501
+                    ),
+                },
+                {"role": "user", "content": json.dumps(payload_dict)},
+            ],
+            model="moonshotai/kimi-k2-instruct-0905",
+            temperature=0.0,
+            response_format={"type": "json_object"},
+        )
+
+        content = chat_completion.choices[0].message.content.strip()
+        logger.info("Groq recommendation raw output: %s", content)
+
+        try:
+            return RecommendationsResponse.model_validate_json(content)
+        except ValidationError as e:
+            logger.warning("Invalid recommendation JSON: %s; error: %s", content, e)
+            return RecommendationsResponse(recommendations=[])
+
     def _ensure_client(self) -> Groq:
         """
-        Lazily initialize Groq client with API key.
+        Lazily create and return the Groq client using GROQ_API_KEY.
         """
-        if self.client is not None:
-            return self.client
-
-        api_key = os.getenv("GROQ_API_KEY")
-        if not api_key:
-            logger.error("GROQ_API_KEY not set in environment.")
-            raise HTTPException(
-                status_code=500, detail="GROQ_API_KEY is not configured"
-            )
-
-        self.client = Groq(api_key=api_key)
+        if self.client is None:
+            api_key = os.getenv("GROQ_API_KEY")
+            if not api_key:
+                logger.error("GROQ_API_KEY is not set")
+                raise HTTPException(
+                    status_code=500, detail="GROQ_API_KEY is not configured"
+                )
+            self.client = Groq(api_key=api_key)
         return self.client
 
 
+# ---------- ASGI app factory ----------
 def create_app() -> FastAPI:
-    """Factory to build the FastAPI app with GroqService routes."""
-    app = FastAPI(title="Groq Provider", version="1.0.0")
-    groq_service = GroqService()
-    app.include_router(groq_service.router)
+    app = FastAPI(title="Groq Provider", version="0.1.0")
+    service = GroqService()
+    app.include_router(service.router)
     return app
 
 
+# Expose module-level ASGI app for uvicorn (module:app)
 app = create_app()
 
-
-# ---------- Entrypoint ----------
-def main():
-    """Entry point for running the Groq service directly."""
-    host = os.getenv("GROQ_HOST", "127.0.0.1")
-    port = int(os.getenv("GROQ_PORT", "8003"))
-    reload_enabled = os.getenv("GROQ_RELOAD", "false").lower() in ("1", "true", "yes")
-
-    # Check if binding to all interfaces was explicitly allowed
-    allow_all = os.getenv("GROQ_ALLOW_BIND_ALL", "false").lower() in (
-        "1",
-        "true",
-        "yes",
-    )
-    if not allow_all and host in ("0.0.0.0", "::"):  # nosec B104
-        logger.warning(
-            "Binding to '%s' (all interfaces) is disabled by default. "
-            "Override by setting GROQ_ALLOW_BIND_ALL=true. "
-            "Falling back to localhost (127.0.0.1).",
-            host,
-        )
-        host = "127.0.0.1"
-
-    uvicorn.run(
-        "groq_service:create_app",
-        host=host,
-        port=port,
-        reload=reload_enabled,
-        factory=True,
-    )
-
-
 if __name__ == "__main__":
-    main()
+    # Run directly: python groq_service.py
+    uvicorn.run(app, host="127.0.0.1", port=int(os.getenv("PORT", "8000")))
