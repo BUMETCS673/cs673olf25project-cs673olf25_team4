@@ -41,23 +41,23 @@ export default defineConfig(({ mode }) => {
       proxy: {
         // Proxy API requests to backend
         '/api': {
-          target: process.env.VITE_API_URL || 'http://localhost:8000',
+          target: process.env.VITE_API_URL || 'http://localhost:8443',
           changeOrigin: true,
           secure: false, // Allow self-signed certs in development
           rewrite: (path) => path,
         },
         '/concerts': {
-          target: process.env.VITE_API_URL || 'http://localhost:8000',
+          target: process.env.VITE_API_URL || 'http://localhost:8443',
           changeOrigin: true,
           secure: false,
         },
         '/nl-concerts': {
-          target: process.env.VITE_API_URL || 'http://localhost:8000',
+          target: process.env.VITE_API_URL || 'http://localhost:8443',
           changeOrigin: true,
           secure: false,
         },
         '/health': {
-          target: process.env.VITE_API_URL || 'http://localhost:8000',
+          target: process.env.VITE_API_URL || 'http://localhost:8443',
           changeOrigin: true,
           secure: false,
         },

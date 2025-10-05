@@ -1,28 +1,39 @@
-import Banner from '../components/Banner';
-import SearchForm from '../components/SearchForm.jsx';
-import NLForm from '../components/NLForm';
+import { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import Banner from "../components/Banner"; 
+import "../styles/globals.css"; 
 
-// SearchPage: main landing page
-// Renders banner, tagline, and both search forms (structured + natural language)
-function SearchPage() {
+export default function SearchPage() {
+  const [input, setInput] = useState("");
+  const navigate = useNavigate();
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    if (!input.trim()) return;
+    navigate(`/results?user_input=${encodeURIComponent(input)}`);
+  };
+
   return (
-    <div className="page">
-      {/* Banner at top */}
+    <div className="search-page">
       <Banner />
 
-      {/* Tagline under banner */}
-      <p className="tagline">
-      </p>
+      <div className="search-content">
+        <h1 className="title">BeatMap</h1>
+        <p className="subtitle">Discover live music that matches your vibe.</p>
 
-      <section className="form-section">
-        <h2>What concerts are you looking for?</h2>
-        <NLForm />
-      </section>
+        <form onSubmit={handleSubmit} className="search-form">
+          <input
+            className="search-input"
+            type="text"
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            placeholder="e.g. Jazz concerts in Boston next month"
+          />
+          <button className="search-btn" type="submit">
+            Let's go!
+          </button>
+        </form>
+      </div>
     </div>
   );
 }
-
-export default SearchPage;
-
-
-

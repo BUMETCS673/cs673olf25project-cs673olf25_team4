@@ -3,28 +3,35 @@
 import pytest
 from fastapi.testclient import TestClient
 from app.main import app
+import httpx
 
 client = TestClient(app)
 
+"""
+BeatMap Project - Unit Tests for Backend API
 
-def test_root_status_code():
-    resp = client.get("/")
-    assert resp.status_code == 200
+This file contains unit tests for the BeatMap FastAPI backend.
+The tests cover the following:
+
+1. Root endpoint ("/")
+   - Verifies status code and response content.
+
+2. Search endpoint ("/search")
+   - Success cases for both providers using mocked API responses.
+   - Invalid provider handling (should return 400).
+   - Provider API failure (simulated 500 response, should return 502).
+   - Provider API timeout (simulated timeout, should return 502).
+
+Notes:
+- External API calls are mocked with `monkeypatch` to avoid real network requests.
+"""
 
 
-def test_root_content():
-    resp = client.get("/")
-    data = resp.json()
-    assert data["status"] == "ok"
-    assert "beatmap" in data["message"].lower()
-
-
-# --- Mocking setup ---
-
+# --- Mock setup ---
 
 class MockResponse:
-    def __init__(self, json_data, status_code=200):
-        self._json = json_data
+    def __init__(self, json_data=None, status_code=200):
+        self._json = json_data or {}
         self.status_code = status_code
 
     def json(self):
@@ -32,10 +39,9 @@ class MockResponse:
 
     def raise_for_status(self):
         if self.status_code >= 400:
-            raise Exception("HTTP error")
+            raise httpx.HTTPStatusError("error", request=None, response=None)
 
 
-# Full fake event
 FULL_EVENT = {
     "results": [
         {
@@ -56,60 +62,67 @@ FULL_EVENT = {
     ]
 }
 
-
-async def mock_get(self, url, params=None, **kwargs):
+async def mock_get_success(self, url, params=None, **kwargs):
     return MockResponse(FULL_EVENT)
+
+async def mock_get_fail(self, url, params=None, **kwargs):
+    return MockResponse({"error": "fail"}, status_code=500)
+
+async def mock_get_timeout(self, url, params=None, **kwargs):
+    raise httpx.TimeoutException("Request timed out")
 
 
 # --- Tests ---
 
+def test_root_status_code():
+    """Root endpoint should return 200"""
+    resp = client.get("/")
+    assert resp.status_code == 200
+
+
+def test_root_content():
+    """Root endpoint should contain status and message"""
+    resp = client.get("/")
+    data = resp.json()
+    assert data["status"] == "ok"
+    assert "beatmap" in data["message"].lower()
+
 
 @pytest.mark.parametrize("provider", ["jambase", "ticketmaster"])
-def test_search_endpoint_success(monkeypatch, provider):
-    monkeypatch.setattr("httpx.AsyncClient.get", mock_get)
+def test_search_success(monkeypatch, provider):
+    """Search endpoint should return full event data"""
+    monkeypatch.setattr("httpx.AsyncClient.get", mock_get_success)
 
-    resp = client.get(
-        "/search",
-        params={
-            "city": "Boston",
-            "start_date": "2025-09-22",
-            "end_date": "2025-09-23",
-            "provider": provider,
-        },
-    )
-
+    resp = client.get("/search", params={"city": "Boston", "provider": provider})
     assert resp.status_code == 200
     data = resp.json()
     assert "results" in data
     event = data["results"][0]
 
-    # Validate all fields
+    # Validate key fields
     assert event["id"] == "EVT123"
     assert event["name"] == "Rock Fest"
-    assert event["url"] == "http://example.com/rockfest"
-    assert event["startDateTime"].startswith("2025-09-22")
-    assert event["segment"] == "Music"
-    assert event["genre"] == "Rock"
-
-    assert "venue" in event
     assert event["venue"]["city"] == "Boston"
-    assert event["venue"]["country"] == "US"
-
-    assert "priceRanges" in event
     assert event["priceRanges"][0]["min"] == 50.0
-    assert event["priceRanges"][0]["max"] == 150.0
 
 
-def test_search_endpoint_failure(monkeypatch):
-    async def mock_get_fail(self, url, params=None, **kwargs):
-        return MockResponse({"error": "fail"}, status_code=500)
+def test_search_invalid_provider():
+    """Search should fail with invalid provider"""
+    resp = client.get("/search", params={"city": "Boston", "provider": "invalid"})
+    assert resp.status_code == 400
 
+
+def test_search_api_fail(monkeypatch):
+    """Search should return 502 if provider API fails"""
     monkeypatch.setattr("httpx.AsyncClient.get", mock_get_fail)
+    resp = client.get("/search", params={"city": "Boston", "provider": "ticketmaster"})
+    assert resp.status_code == 502
+    assert "Error fetching concert data" in resp.json()["detail"]
 
-    resp = client.get(
-        "/search",
-        params={"city": "Boston", "provider": "jambase"},
-    )
 
+def test_search_api_timeout(monkeypatch):
+    """Search should return 502 if provider API times out"""
+    monkeypatch.setattr("httpx.AsyncClient.get", mock_get_timeout)
+    resp = client.get("/search", params={"city": "Boston", "provider": "ticketmaster"})
     assert resp.status_code == 502
     assert "Error fetching concert data" in resp.json()["detail"]

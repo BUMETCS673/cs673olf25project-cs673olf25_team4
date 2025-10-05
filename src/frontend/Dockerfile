@@ -1,24 +1,14 @@
 # ---- Build Stage ----
 FROM node:20-alpine AS build
-
-# Set working directory
 WORKDIR /app
-
-# Copy package.json and lock file first (for caching)
 COPY package*.json ./
-
-# Install dependencies
 RUN npm install
-
-# Copy the rest of the project
 COPY . .
-
-# Build the Vite app
 RUN npm run build
-
 
 # ---- Production Stage ----
 FROM nginx:alpine
+
 
 # Remove default site to prevent server_name conflicts
 RUN rm -f /etc/nginx/conf.d/default.conf
@@ -31,7 +21,6 @@ RUN apk add --no-cache openssl
 COPY nginx.conf /etc/nginx/conf.d/http.conf
 COPY nginx-ssl.conf /etc/nginx/conf.d/https.conf.template
 
-# Copy built assets from build stage
 COPY --from=build /app/dist /usr/share/nginx/html
 
 # Create SSL certificate directory

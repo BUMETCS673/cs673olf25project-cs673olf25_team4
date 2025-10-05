@@ -95,7 +95,7 @@ def create_app() -> FastAPI:
 
     # Register ConcertsService
     concerts_service = ConcertsService()
-    app.include_router(concerts_service.router)
+    app.include_router(concerts_service.router, prefix="/concerts")
 
     logger.info(f"FastAPI application created for environment: {ENVIRONMENT}")
     logger.info(f"CORS origins: {cors_origins}")
