@@ -5,6 +5,7 @@
 
 import os
 from typing import Optional
+from datetime import date
 
 import uvicorn
 from fastapi import FastAPI, HTTPException, APIRouter, Query
@@ -163,7 +164,7 @@ class GroqService:
         """
         Extract tokens (location, dates, artist) from user input about a music event.
         """
-        logger.info("Received token count request")
+        logger.info("Received token split request")
         client = self._ensure_client()
 
         chat_completion = await run_in_threadpool(
@@ -173,30 +174,43 @@ class GroqService:
                     "role": "system",
                     "content": (
                         "You are an extractor.\n"
+                        f"Today is {date.today().strftime('%d%m%Y')} "
+                        "(America/New_York).\n"
                         "Fields:\n"
                         "- locations: array of strings\n"
                         "- start_date: string\n"
                         "- end_date: string\n"
-                        "- artists: array of strings\n\n"
+                        "- artists: array of strings\n"
+                        "\n"
                         "Rules:\n"
-                        "- Dates must be formatted as ddMMyyyy (e.g., 05082025).\n"
+                        "- Dates use ddMMyyyy.\n"
                         "- One date → same start_date and end_date.\n"
                         "- Date range → set both explicitly.\n"
-                        "- Week → Monday as start_date, Sunday as end_date.\n"
-                        "  Examples: 'week 42 of 2025', 'week of 12 May 2026'.\n"
-                        "- Month+year → first to last day of month.\n"
+                        "- Week → Mon start, Sun end.\n"
+                        "- Month+year → first to last day.\n"
                         "- Year only → 0101YYYY to 3112YYYY.\n"
-                        '- If missing/unclear, set value to "unknown".\n'
-                        "- Respond with only valid JSON.\n"
-                        "  No explanations, no extra text.\n"
+                        '- If missing/unclear → "unknown".\n'
+                        "- All dates must be in the future. Never in the past.\n"
+                        "- start_date must be in the future. Never in the past.\n"
+                        "- end_date must be in the future. Never in the past.\n"
+                        "- Month with no year → next such month on/after today.\n"
+                        "- Season with no year → this season if ongoing, else next.\n"
+                        "- Vague periods (e.g., 'this summer', 'in July') assume "
+                        "  NEXT occurrence. Meaning in the FUTURE.\n"
+                        "- If a period began and is ongoing → start_date = today.\n"
+                        "- Respond with valid JSON only. No extra text.\n"
+                        "\n"
                         "Output:\n"
-                        "Exactly one JSON object, structured as:\n"
-                        '{"locations":["..."],"start_date":"...","end_date":"...","artists":["..."]}'  # noqa: E501
+                        "One JSON object exactly:\n"
+                        '{"locations":["..."],'
+                        '"start_date":"...",'
+                        '"end_date":"...",'
+                        '"artists":["..."]}'
                     ),
                 },
                 {"role": "user", "content": user_input},
             ],
-            model="moonshotai/kimi-k2-instruct-0905",
+            model="openai/gpt-oss-120b",
             temperature=0.0,
         )
 
@@ -301,12 +315,23 @@ class GroqService:
                     "role": "system",
                     "content": (
                         "You are a concert recommendation engine. "
-                        "Given user_preferences and a list of candidate events,"
-                        "return the top 3 recommendations. "
-                        "You must respond **with only valid JSON**, "
-                        "no explanations, no extra text. "
-                        "The JSON object must be structured exactly like this:\n"
-                        '{"recommendations":[{"rank":1,"event_id":"...","reason":"..."},{"rank":2,"event_id":"...","reason":"..."},{"rank":3,"event_id":"...","reason":"..."}]}'  # noqa: E501
+                        "Given 'user_preferences' and a list of 'candidate_events', "
+                        "you must return the top 3 recommended events. "
+                        "If there are 3 or fewer candidate events, return all of them. "
+                        "Do NOT omit any valid event."
+                        "Always return at least one recommendation.\n"
+                        "Respond **only with valid JSON**, "
+                        "no explanations or extra text. "
+                        "Do not include markdown, code fences, or commentary.\n"
+                        "The JSON must have this exact structure:\n"
+                        '{"recommendations":['
+                        '{"rank":1,"event_id":"...","reason":"..."},'
+                        '{"rank":2,"event_id":"...","reason":"..."},'
+                        '{"rank":3,"event_id":"...","reason":"..."}]}\n'
+                        "If there are fewer than 3 events, "
+                        "include only as many as exist. "
+                        "Omit higher ranks instead of leaving them empty. "
+                        "Never return an empty list for 'recommendations'."
                     ),
                 },
                 {"role": "user", "content": json.dumps(payload_dict)},
