@@ -9,11 +9,7 @@ RUN npm run build
 # ---- Production Stage ----
 FROM nginx:alpine
 
-<<<<<<< HEAD
-RUN rm /etc/nginx/conf.d/default.conf
 
-COPY nginx.conf /etc/nginx/conf.d/default.conf
-=======
 # Remove default site to prevent server_name conflicts
 RUN rm -f /etc/nginx/conf.d/default.conf
 
@@ -24,14 +20,9 @@ RUN apk add --no-cache openssl
 # nginx.conf is for HTTP, nginx-ssl.conf is for HTTPS
 COPY nginx.conf /etc/nginx/conf.d/http.conf
 COPY nginx-ssl.conf /etc/nginx/conf.d/https.conf.template
->>>>>>> main
 
 COPY --from=build /app/dist /usr/share/nginx/html
 
-<<<<<<< HEAD
-EXPOSE 80
-CMD ["nginx", "-g", "daemon off;"]
-=======
 # Create SSL certificate directory
 RUN mkdir -p /etc/nginx/ssl
 
@@ -45,4 +36,3 @@ EXPOSE 80 443
 
 # Use custom entrypoint
 ENTRYPOINT ["/docker-entrypoint.sh"]
->>>>>>> main

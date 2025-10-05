@@ -42,6 +42,38 @@ if [ "$CERT_FOUND" = "true" ]; then
   echo "HTTPS configuration activated"
 else
   echo "No SSL certificates found, running HTTP only"
+  # Ensure we don't leave an HTTPS config behind (from previous builds/containers)
+  if [ -f /etc/nginx/conf.d/https.conf ]; then
+    echo "Removing leftover HTTPS config (/etc/nginx/conf.d/https.conf) to run HTTP only"
+    rm -f /etc/nginx/conf.d/https.conf || true
+  fi
+fi
+
+# Defensive: if certs are mounted directly into /etc/nginx/ssl (e.g. via docker-compose)
+# and have expected names (fullchain.pem/privkey.pem), treat them as found.
+if [ -f "/etc/nginx/ssl/fullchain.pem" ] && [ -f "/etc/nginx/ssl/privkey.pem" ]; then
+  echo "Found certs in /etc/nginx/ssl; enabling HTTPS configs where applicable";
+  # Make sure https.conf is created from template if not already
+  if [ ! -f /etc/nginx/conf.d/https.conf ] && [ -f /etc/nginx/conf.d/https.conf.template ]; then
+    # Ensure template references the correct backend service name for dev
+    sed -i 's|concert_backend_prod|backend|g' /etc/nginx/conf.d/https.conf.template || true
+    cp /etc/nginx/conf.d/https.conf.template /etc/nginx/conf.d/https.conf || true
+  fi
+fi
+
+# Fallback: if server.crt/server.key exist but fullchain/privkey do not, copy them to expected filenames
+if [ -f "/etc/nginx/ssl/server.crt" ] && [ -f "/etc/nginx/ssl/server.key" ]; then
+  echo "Detected /etc/nginx/ssl/server.crt and server.key; updating template to use these files"
+  # Update template to use server.crt/server.key directly (don't copy files into read-only mounts)
+  if [ -f /etc/nginx/conf.d/https.conf.template ]; then
+    sed -i 's|ssl_certificate .*|ssl_certificate /etc/nginx/ssl/server.crt;|g' /etc/nginx/conf.d/https.conf.template || true
+    sed -i 's|ssl_certificate_key .*|ssl_certificate_key /etc/nginx/ssl/server.key;|g' /etc/nginx/conf.d/https.conf.template || true
+    sed -i 's|ssl_trusted_certificate .*|ssl_trusted_certificate /etc/nginx/ssl/server.crt;|g' /etc/nginx/conf.d/https.conf.template || true
+    # Also ensure backend host in template is set to the dev service name
+    sed -i 's|concert_backend_prod|backend|g' /etc/nginx/conf.d/https.conf.template || true
+    # Activate the https config from the updated template
+    cp /etc/nginx/conf.d/https.conf.template /etc/nginx/conf.d/https.conf || true
+  fi
 fi
 
 # Test nginx configuration

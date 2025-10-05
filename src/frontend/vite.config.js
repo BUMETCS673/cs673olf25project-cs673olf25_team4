@@ -4,23 +4,6 @@ import fs from 'fs'
 import path from 'path'
 
 // https://vite.dev/config/
-<<<<<<< HEAD
-export default defineConfig({
-  plugins: [react()],
-  base: './',
-  build: {
-    outDir: 'dist',
-  },
-  server: {
-    proxy: {
-      '/concerts': {
-        target: 'http://concert_backend:8000', 
-        changeOrigin: true,
-      },
-    },
-  },
-})
-=======
 export default defineConfig(({ mode }) => {
   // HTTPS configuration for development
   const httpsConfig = mode === 'development' ? {
@@ -58,23 +41,23 @@ export default defineConfig(({ mode }) => {
       proxy: {
         // Proxy API requests to backend
         '/api': {
-          target: process.env.VITE_API_URL || 'http://localhost:8000',
+          target: process.env.VITE_API_URL || 'http://localhost:8443',
           changeOrigin: true,
           secure: false, // Allow self-signed certs in development
           rewrite: (path) => path,
         },
         '/concerts': {
-          target: process.env.VITE_API_URL || 'http://localhost:8000',
+          target: process.env.VITE_API_URL || 'http://localhost:8443',
           changeOrigin: true,
           secure: false,
         },
         '/nl-concerts': {
-          target: process.env.VITE_API_URL || 'http://localhost:8000',
+          target: process.env.VITE_API_URL || 'http://localhost:8443',
           changeOrigin: true,
           secure: false,
         },
         '/health': {
-          target: process.env.VITE_API_URL || 'http://localhost:8000',
+          target: process.env.VITE_API_URL || 'http://localhost:8443',
           changeOrigin: true,
           secure: false,
         },
@@ -88,4 +71,3 @@ export default defineConfig(({ mode }) => {
     },
   };
 })
->>>>>>> main

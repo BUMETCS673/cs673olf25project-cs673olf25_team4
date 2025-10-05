@@ -20,15 +20,22 @@ function ResultsPage() {
     async function fetchRecommendations() {
       try {
         console.log("Fetching recommendations for:", userInput);
-
-        const response = await fetch(
-          `${window.location.origin}/concerts/recommendations?user_input=${encodeURIComponent(userInput)}`
-        );
-
+        console.log("origin:", window.location.origin);
+        const url = `/concerts/recommendations?user_input=${encodeURIComponent(
+          userInput
+        )}`;
+        const response = await fetch(url);
+        const contentType = response.headers.get("content-type") || "";
         if (!response.ok) {
+          const text = await response.text();
+          console.error("Non-OK response", response.status, text);
           throw new Error(`HTTP error! Status: ${response.status}`);
         }
-
+        if (!contentType.includes("application/json")) {
+          const text = await response.text();
+          console.error("Expected JSON but got:", contentType, text);
+          throw new Error("Expected JSON response from /concerts/recommendations");
+        }
         const data = await response.json();
         console.log("Recommendations received:", data);
         setRecommendations(data.recommendations || []);
