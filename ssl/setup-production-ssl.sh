@@ -462,6 +462,12 @@ main() {
   stop_services
 
   if obtain_certificate; then
+      # Ensure Let's Encrypt certs are world-readable for Docker mounts
+    info "Fixing permissions for Let's Encrypt certs..."
+    chmod -R a+r /etc/letsencrypt/live || true
+    chmod -R a+r /etc/letsencrypt/archive || trues
+    success "Permissions adjusted for Docker access."
+
     copy_certificates
     validate_certificate
     create_cert_info
