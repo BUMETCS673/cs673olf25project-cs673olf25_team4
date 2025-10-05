@@ -197,6 +197,35 @@ class SSLSettings(BaseSettings):
             # Development allows all configured origins
             return self.cors_origins
 
+    # Backwards-compatible alias expected by some older tests
+    def get_cors_origins(self) -> List[str]:
+        """Compatibility shim: return environment-filtered CORS origins.
+
+        Some tests and older code reference get_cors_origins(); prefer the
+        newer get_environment_cors_origins but provide this wrapper to avoid
+        breaking callers.
+        """
+        # Normalize configured origins to a list of strings
+        raw_origins = self.cors_origins or []
+        # Filter out obviously malformed entries and allow only safe schemes
+        allowed_schemes = ("http://", "https://", "ws://", "wss://")
+        normalized = []
+        for origin in raw_origins:
+            if not origin or not isinstance(origin, str):
+                continue
+            origin = origin.strip()
+            if any(origin.startswith(s) for s in allowed_schemes):
+                normalized.append(origin)
+
+        # Temporarily set cors_origins to normalized list and apply environment filter
+        original = self.cors_origins
+        try:
+            self.cors_origins = normalized
+            return self.get_environment_cors_origins()
+        finally:
+            # restore original to avoid side-effects
+            self.cors_origins = original
+
     def is_development(self) -> bool:
         """Check if running in development environment."""
         return self.environment.lower() in ["development", "dev", "local"]

@@ -52,7 +52,6 @@ class ConcertsService:
             "groq": os.getenv("GROQ_API_URL", "http://groq_provider:8003"),
         }
 
-
         self._provider_cycle = cycle(self.concert_data_providers.keys())
 
         # Determine if we should verify SSL certificates
