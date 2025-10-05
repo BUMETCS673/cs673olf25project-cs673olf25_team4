@@ -105,7 +105,8 @@ def create_app() -> FastAPI:
         return JSONResponse(
             {
                 "status": "ok",
-                "message": f"Welcome to {APP_NAME} - backend API. Use /concerts or /search.",
+                "message": f"Welcome to {APP_NAME} - backend API. \
+                    Use /concerts or /search.",
             }
         )
 

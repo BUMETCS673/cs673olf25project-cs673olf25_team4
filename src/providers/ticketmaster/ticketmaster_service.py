@@ -15,6 +15,7 @@ from pydantic import BaseModel
 from dotenv import load_dotenv
 from zoneinfo import ZoneInfo
 import logging
+import random
 
 logging.basicConfig(
     level=logging.INFO,  # or DEBUG if you want more detail
@@ -280,6 +281,10 @@ class TicketmasterService:
             # Keep next link if exists (from last keyword call)
             next_link = (raw.get("_links", {}) or {}).get("next", {}).get("href")
 
+        # Randomly sample 20 events if more than 20 are found
+        if len(all_items) > 20:
+            all_items = random.sample(all_items, 20)
+        total_elements = len(all_items)
         return EventSearchResponse(
             totalElements=total_elements,
             page=page_info.get("number", page),

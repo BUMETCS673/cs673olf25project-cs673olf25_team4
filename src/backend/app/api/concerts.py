@@ -151,24 +151,28 @@ class ConcertsService:
             # when available.
             # Match existing error messaging used elsewhere/tests
             if status_code:
-                detail_msg = f"Error fetching concert data: Provider {concert_data_provider} returned error: {status_code}"
+                detail_msg = f"Error fetching concert data: \
+                    Provider {concert_data_provider} returned error: {status_code}"
             else:
                 detail_msg = f"Error fetching concert data: {str(e)}"
 
             raise HTTPException(status_code=502, detail=detail_msg)
         except httpx.RequestError as e:
-            logger.error(
-                f"Request error to provider {concert_data_provider}: {str(e)}"
-            )
+            logger.error(f"Request error to provider {concert_data_provider}: {str(e)}")
             raise HTTPException(
                 status_code=502,
                 detail=(
-                    f"Error fetching concert data: Error connecting to provider {concert_data_provider}: {str(e)}"
+                    f"Error fetching concert data: \
+                        Error connecting to provider {concert_data_provider}: {str(e)}"
                 ),
             )
         except Exception as e:
-            logger.error(f"Unexpected error from provider {concert_data_provider}: {str(e)}")
-            raise HTTPException(status_code=502, detail=f"Error fetching concert data: {str(e)}")
+            logger.error(
+                f"Unexpected error from provider {concert_data_provider}: {str(e)}"
+            )
+            raise HTTPException(
+                status_code=502, detail=f"Error fetching concert data: {str(e)}"
+            )
 
     # ----------------------------------------------------------------------
     # Provider cycling
