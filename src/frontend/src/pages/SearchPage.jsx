@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import Banner from "../components/Banner"; 
-import "../styles/SearchPage.css"; 
+import "../styles/globals.css"; 
 
 export default function SearchPage() {
   const [input, setInput] = useState("");
