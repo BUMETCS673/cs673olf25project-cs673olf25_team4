@@ -33,9 +33,9 @@ services:
       HSTS_PRELOAD: "true"
 
       # Provider URLs (internal HTTPS)
-      JAMBASE_API_URL: https://jambase_provider:8002
-      TICKETMASTER_API_URL: https://ticketmaster_provider:8001
-      GROQ_API_URL: https://groq_provider:8003
+      JAMBASE_API_URL: http://jambase_provider:8002
+      TICKETMASTER_API_URL: http://ticketmaster_provider:8001
+      GROQ_API_URL: http://groq_provider:8003
 
       # API Keys
       JAMBASE_API_KEY: ${JAMBASE_API_KEY}
