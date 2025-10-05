@@ -27,7 +27,6 @@ services:
       TM_PROVIDER_URL: http://ticketmaster_provider:8001
       TICKETMASTER_API_URL: http://ticketmaster_provider:8001
       GROQ_API_URL: http://groq_provider:8003
-      GROQ_PROVIDER_URL: http://groq_provider:8003
 
   ticketmaster_provider:
     build:

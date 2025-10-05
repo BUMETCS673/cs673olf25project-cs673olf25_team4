@@ -135,7 +135,7 @@ This completely addresses the team feedback about reducing manual steps - team m
    - Added detailed logging for debugging connection issues
 
 2. **Updated `src/backend/app/core/groq_client.py`**:
-   - Added support for both `GROQ_API_URL` (new) and `GROQ_PROVIDER_URL` (old) environment variables
+   - Added support for both `GROQ_API_URL`
    - Implemented environment-aware SSL verification
    - Added logging for SSL verification status
    - Updated httpx.AsyncClient initialization with `verify` parameter

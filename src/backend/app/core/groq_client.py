@@ -43,12 +43,14 @@ class GroqClient:
         """Initialize the Groq client with optional base URL and HTTP client."""
         # Support both old and new environment variable names
         self.base_url = base_url or os.getenv(
-            "GROQ_API_URL", os.getenv("GROQ_PROVIDER_URL", "http://groq_provider:8003")
+            "GROQ_API_URL", os.getenv("GROQ_API_URL", "http://groq_provider:8003")
         )
 
         # Determine if we should verify SSL certificates
-        environment = os.getenv("ENVIRONMENT", "development").lower()
-        verify_ssl = environment in ["production", "prod", "staging"]
+        # In development with self-signed certs, we disable verification
+        # Left ability in place for future use if when microservices run
+        # under different networks/Docker environments
+        verify_ssl = False
 
         if not verify_ssl:
             logger.warning("SSL verification disabled for Groq client in development")
