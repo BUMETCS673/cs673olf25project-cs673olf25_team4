@@ -93,7 +93,13 @@ jobs:
             echo "▶ Checking SSL certificates for beatmap.live..."
             if [ ! -f "/etc/letsencrypt/live/beatmap.live/fullchain.pem" ]; then
               echo "SSL certificates not found. Generating..."
-              sudo bash ssl/setup-production-ssl.sh || {
+
+              echo "▶ Freeing port 80 for certbot..."
+              sudo fuser -k 80/tcp || true
+              sudo docker stop $(sudo docker ps -q --filter "publish=80") || true
+
+              echo "▶ Running SSL setup..."
+              sudo NON_INTERACTIVE=true bash ssl/setup-production-ssl.sh || {
                 echo "❌ SSL setup failed. Deployment aborted."
                 echo "Rolling back..."
                 if [ -f "$BACKUP_DIR/docker-compose.backup.yml" ]; then
