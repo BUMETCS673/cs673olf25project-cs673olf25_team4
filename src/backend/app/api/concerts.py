@@ -135,32 +135,40 @@ class ConcertsService:
                 response.raise_for_status()
                 return response.json()
         except httpx.HTTPStatusError as e:
+            # httpx.HTTPStatusError may be raised without a response (e.g., in
+            # unit tests where the exception is constructed with response=None).
+            status_code = None
+            resp_text = None
+            if getattr(e, "response", None) is not None:
+                status_code = getattr(e.response, "status_code", None)
+                resp_text = getattr(e.response, "text", None)
+
             logger.error(
                 f"HTTP error from provider {concert_data_provider}: "
-                f"{e.response.status_code} - {e.response.text}"
+                f"{status_code} - {resp_text or str(e)}"
             )
-            raise HTTPException(
-                status_code=502,
-                detail=f"Provider {concert_data_provider} \
-                    returned error: {e.response.status_code}",
-            )
+            # Surface a generic 502 to callers while preserving some detail
+            # when available.
+            # Match existing error messaging used elsewhere/tests
+            if status_code:
+                detail_msg = f"Error fetching concert data: Provider {concert_data_provider} returned error: {status_code}"
+            else:
+                detail_msg = f"Error fetching concert data: {str(e)}"
+
+            raise HTTPException(status_code=502, detail=detail_msg)
         except httpx.RequestError as e:
             logger.error(
-                f"Request error to provider \
-                         {concert_data_provider}: {str(e)}"
+                f"Request error to provider {concert_data_provider}: {str(e)}"
             )
             raise HTTPException(
                 status_code=502,
-                detail=f"Error connecting to provider \
-                    {concert_data_provider}: {str(e)}",
+                detail=(
+                    f"Error fetching concert data: Error connecting to provider {concert_data_provider}: {str(e)}"
+                ),
             )
         except Exception as e:
-            logger.error(
-                f"Unexpected error from provider {concert_data_provider}: {str(e)}"
-            )
-            raise HTTPException(
-                status_code=502, detail=f"Error fetching concert data: {e}"
-            )
+            logger.error(f"Unexpected error from provider {concert_data_provider}: {str(e)}")
+            raise HTTPException(status_code=502, detail=f"Error fetching concert data: {str(e)}")
 
     # ----------------------------------------------------------------------
     # Provider cycling

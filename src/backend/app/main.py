@@ -7,6 +7,7 @@ import uvicorn
 import os
 import logging
 from fastapi import FastAPI, Request
+from typing import Optional
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
@@ -95,7 +96,38 @@ def create_app() -> FastAPI:
 
     # Register ConcertsService
     concerts_service = ConcertsService()
+    # Keep the namespaced concerts routes available under /concerts
     app.include_router(concerts_service.router, prefix="/concerts")
+
+    # Top-level root endpoint (tests expect a root at "/")
+    @app.get("/")
+    async def root(request: Request):
+        return JSONResponse(
+            {
+                "status": "ok",
+                "message": f"Welcome to {APP_NAME} - backend API. Use /concerts or /search.",
+            }
+        )
+
+    # Top-level /search wrapper for compatibility with tests that
+    # call /search (the ConcertsService exposes /concerts/search).
+    @app.get("/search")
+    async def top_level_search(
+        city: Optional[str] = None,
+        start_date: Optional[str] = None,
+        end_date: Optional[str] = None,
+        provider: Optional[str] = None,
+        keyword: Optional[str] = None,
+    ):
+        # Forward to the ConcertsService.search method, mapping the
+        # query param `provider` → `concert_data_provider`.
+        return await concerts_service.search(
+            city=city,
+            start_date=start_date,
+            end_date=end_date,
+            concert_data_provider=provider,
+            keyword=keyword,
+        )
 
     logger.info(f"FastAPI application created for environment: {ENVIRONMENT}")
     logger.info(f"CORS origins: {cors_origins}")
