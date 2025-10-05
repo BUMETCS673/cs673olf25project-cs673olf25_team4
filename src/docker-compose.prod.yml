@@ -10,7 +10,8 @@ services:
     ports:
       - "8443:8443"   # HTTPS only
     volumes:
-      - /etc/letsencrypt/live/beatmap.live:/app/ssl:ro  # Mount Let's Encrypt certificates (read-only)
+      - /etc/letsencrypt/live/beatmap.live:/app/ssl:ro
+      - /etc/letsencrypt/archive/beatmap.live:/etc/letsencrypt/archive/beatmap.live:ro
     depends_on:
       - ticketmaster_provider
       - jambase_provider
@@ -20,7 +21,7 @@ services:
       ENVIRONMENT: production
 
       # Server Configuration
-      BEATMAP_HOST: "0.0.0.0"  # Listen on all interfaces for Docker
+      BEATMAP_HOST: "0.0.0.0"
       BEATMAP_PORT: "8000"
 
       # SSL Configuration
@@ -28,8 +29,8 @@ services:
       SSL_CERT_PATH: /app/ssl/fullchain.pem
       SSL_KEY_PATH: /app/ssl/privkey.pem
       SSL_PORT: "8443"
-      FORCE_HTTPS: "true"  # Enforce HTTPS in production
-      HSTS_ENABLED: "true"  # Enable HSTS in production
+      FORCE_HTTPS: "true"
+      HSTS_ENABLED: "true"
       HSTS_PRELOAD: "true"
 
       # Provider URLs (HTTPS internal)
@@ -61,9 +62,9 @@ services:
     ports:
       - "8001:8001"   # HTTPS
     volumes:
-      - /etc/letsencrypt/live/beatmap.live:/app/ssl:ro  # Mount Let's Encrypt certificates (read-only)
+      - /etc/letsencrypt/live/beatmap.live:/app/ssl:ro
+      - /etc/letsencrypt/archive/beatmap.live:/etc/letsencrypt/archive/beatmap.live:ro
     environment:
-      # SSL Configuration
       TM_SSL_ENABLED: "true"
       TM_SSL_CERT_PATH: /app/ssl/fullchain.pem
       TM_SSL_KEY_PATH: /app/ssl/privkey.pem
@@ -71,7 +72,6 @@ services:
       TM_PORT: "8001"
       TM_ALLOW_BIND_ALL: "true"
 
-      # API Configuration
       TM_API_KEY: ${TM_API_KEY}
       TM_API_SECRET: ${TM_API_SECRET}
       TM_BASE_URL: https://app.ticketmaster.com/discovery/v2
@@ -93,9 +93,9 @@ services:
     ports:
       - "8002:8002"   # HTTPS
     volumes:
-      - /etc/letsencrypt/live/beatmap.live:/app/ssl:ro  # Mount Let's Encrypt certificates (read-only)
+      - /etc/letsencrypt/live/beatmap.live:/app/ssl:ro
+      - /etc/letsencrypt/archive/beatmap.live:/etc/letsencrypt/archive/beatmap.live:ro
     environment:
-      # SSL Configuration
       JAMBASE_SSL_ENABLED: "true"
       JAMBASE_SSL_CERT_PATH: /app/ssl/fullchain.pem
       JAMBASE_SSL_KEY_PATH: /app/ssl/privkey.pem
@@ -103,7 +103,6 @@ services:
       JAMBASE_PORT: "8002"
       JAMBASE_ALLOW_BIND_ALL: "true"
 
-      # API Configuration
       JAMBASE_API_KEY: ${JAMBASE_API_KEY}
     restart: unless-stopped
     logging:
@@ -123,9 +122,9 @@ services:
     ports:
       - "8003:8003"   # HTTPS
     volumes:
-      - /etc/letsencrypt/live/beatmap.live:/app/ssl:ro  # Mount Let's Encrypt certificates (read-only)
+      - /etc/letsencrypt/live/beatmap.live:/app/ssl:ro
+      - /etc/letsencrypt/archive/beatmap.live:/etc/letsencrypt/archive/beatmap.live:ro
     environment:
-      # SSL Configuration
       GROQ_SSL_ENABLED: "true"
       GROQ_SSL_CERT_PATH: /app/ssl/fullchain.pem
       GROQ_SSL_KEY_PATH: /app/ssl/privkey.pem
@@ -133,7 +132,6 @@ services:
       GROQ_PORT: "8003"
       GROQ_ALLOW_BIND_ALL: "true"
 
-      # API Configuration
       GROQ_API_KEY: ${GROQ_API_KEY}
     restart: unless-stopped
     logging:
@@ -153,14 +151,14 @@ services:
       - "80:80"      # HTTP (redirects to HTTPS)
       - "443:443"    # HTTPS
     volumes:
-      - /etc/letsencrypt/live/beatmap.live:/etc/letsencrypt/live/beatmap.live:ro  # Mount Let's Encrypt certificates (read-only)
-      - /etc/letsencrypt/archive/beatmap.live:/etc/letsencrypt/archive/beatmap.live:ro  # Mount archive for symlinks
+      - /etc/letsencrypt/live/beatmap.live:/etc/letsencrypt/live/beatmap.live:ro
+      - /etc/letsencrypt/archive/beatmap.live:/etc/letsencrypt/archive/beatmap.live:ro
     depends_on:
       - backend
     environment:
       VITE_API_URL: https://beatmap.live
       VITE_ENABLE_HTTPS: "true"
-      VITE_STRICT_SSL: "true"  # Verify SSL certs in production
+      VITE_STRICT_SSL: "true"
     restart: unless-stopped
     logging:
       driver: "json-file"
