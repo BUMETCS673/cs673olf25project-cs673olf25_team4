@@ -21,7 +21,7 @@ function ResultsPage() {
       try {
         console.log("Fetching recommendations for:", userInput);
         console.log("origin:", window.location.origin);
-        const url = `/concerts/recommendations?user_input=${encodeURIComponent(
+        const url = `/concerts?user_input=${encodeURIComponent(
           userInput
         )}`;
         const response = await fetch(url);

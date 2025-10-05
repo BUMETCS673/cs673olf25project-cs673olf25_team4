@@ -1,8 +1,7 @@
-"""Concert search and recommendation API endpoints."""
+"""Concert search and AI-powered recommendation endpoints."""
 
 import os
 from typing import Optional
-
 import httpx
 from fastapi import APIRouter, Query, HTTPException
 from itertools import cycle
@@ -12,7 +11,7 @@ from ..core.groq_client import GroqClient
 logger = logging.getLogger(__name__)
 
 logging.basicConfig(
-    level=logging.INFO,  # or DEBUG if you want more detail
+    level=logging.INFO,
     format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
 )
 
@@ -21,11 +20,11 @@ class ConcertsService:
     """Service for handling concert search and AI-powered recommendations."""
 
     def __init__(self):
-        """Initialize the concerts service with provider configurations."""
         self.router = APIRouter(tags=["concerts"])
 
-        # Register routes
-        self.router.add_api_route("/", self.root, methods=["GET"], tags=["meta"])
+        # --- Register routes (support /concerts and /concerts/) ---
+        self.router.add_api_route("", self.root, methods=["GET"], tags=["concerts"], include_in_schema=False)
+        self.router.add_api_route("/", self.root, methods=["GET"], tags=["concerts"])
         self.router.add_api_route(
             "/search", self.search, methods=["GET"], tags=["concerts"]
         )
@@ -36,7 +35,7 @@ class ConcertsService:
             tags=["concerts"],
         )
 
-        # Provider URLs from env (support both old and new variable names)
+        # --- Provider URLs ---
         self.concert_data_providers = {
             "jambase": os.getenv(
                 "JAMBASE_API_URL",
@@ -54,28 +53,40 @@ class ConcertsService:
 
         self._provider_cycle = cycle(self.concert_data_providers.keys())
 
-        # Determine if we should verify SSL certificates
-        # In development with self-signed certs, we disable verification
-        # Left ability in place for future use if when microservices run
-        # under different networks/Docker environments
+        # Disable SSL verification for internal Docker network
         self.verify_ssl = False
-
         if not self.verify_ssl:
             logger.warning("SSL verification disabled for development environment")
 
-    async def root(self):
-        """Return service health status."""
-        return {
-            "status": "ok",
-            "message": "Backend is running. Main entry point for beatmap.",
-        }
+    # ----------------------------------------------------------------------
+    # Root route → delegates to AI recommendations
+    # ----------------------------------------------------------------------
+    async def root(self, user_input: Optional[str] = Query(None, description="Natural-language user input")):
+        """
+        Root endpoint delegates to AI recommendations.
+        Example:
+        GET /concerts?user_input=rock+concerts+in+Boston+next+week
+        """
+        if not user_input:
+            logger.warning("No user_input provided to /concerts; returning guidance message.")
+            return {
+                "status": "ok",
+                "message": "Please provide a 'user_input' query parameter. "
+                           "Example: /concerts?user_input=rock+concerts+in+Boston+next+week"
+            }
 
+        logger.info(f"Root /concerts called → forwarding to get_curated_concert_recommendations() with input: {user_input}")
+        return await self.get_curated_concert_recommendations(user_input=user_input)
+
+    # ----------------------------------------------------------------------
+    # Search endpoint (direct API search)
+    # ----------------------------------------------------------------------
     async def search(
         self,
-        city: str = Query(None, description="City to search concerts in."),
-        start_date: str = Query(None, description="Start date YYYY-MM-DD"),
-        end_date: str = Query(None, description="End date YYYY-MM-DD"),
-        concert_data_provider: str = Query(
+        city: Optional[str] = Query(None, description="City to search concerts in."),
+        start_date: Optional[str] = Query(None, description="Start date YYYY-MM-DD"),
+        end_date: Optional[str] = Query(None, description="End date YYYY-MM-DD"),
+        concert_data_provider: Optional[str] = Query(
             None, description="Provider to search (jambase, ticketmaster)"
         ),
         keyword: Optional[str] = None,
@@ -102,10 +113,7 @@ class ConcertsService:
         logger.info(f"Using provider: {concert_data_provider}")
         try:
             clean = {k: v for k, v in params.items() if v is not None}
-            # Create HTTP client with appropriate SSL verification
-            async with httpx.AsyncClient(
-                timeout=20.0, verify=self.verify_ssl
-            ) as client:
+            async with httpx.AsyncClient(timeout=20.0, verify=self.verify_ssl) as client:
                 response = await client.get(
                     f"{self.concert_data_providers[concert_data_provider]}/search",
                     params=clean,
@@ -117,17 +125,16 @@ class ConcertsService:
                 f"HTTP error from provider {concert_data_provider}: "
                 f"{e.response.status_code} - {e.response.text}"
             )
-            detail_msg = (
-                f"Provider {concert_data_provider} returned error: "
-                f"{e.response.status_code}"
+            raise HTTPException(
+                status_code=502,
+                detail=f"Provider {concert_data_provider} returned error: {e.response.status_code}",
             )
-            raise HTTPException(status_code=502, detail=detail_msg)
         except httpx.RequestError as e:
             logger.error(f"Request error to provider {concert_data_provider}: {str(e)}")
-            detail_msg = (
-                f"Error connecting to provider {concert_data_provider}: {str(e)}"
+            raise HTTPException(
+                status_code=502,
+                detail=f"Error connecting to provider {concert_data_provider}: {str(e)}",
             )
-            raise HTTPException(status_code=502, detail=detail_msg)
         except Exception as e:
             logger.error(
                 f"Unexpected error from provider {concert_data_provider}: {str(e)}"
@@ -136,19 +143,24 @@ class ConcertsService:
                 status_code=502, detail=f"Error fetching concert data: {e}"
             )
 
+    # ----------------------------------------------------------------------
+    # Provider cycling
+    # ----------------------------------------------------------------------
     def get_provider(self, requested=None):
         """Get the requested provider or cycle to the next available one."""
         if requested:
             return requested
         return next(self._provider_cycle)
 
+    # ----------------------------------------------------------------------
+    # Recommendation enrichment
+    # ----------------------------------------------------------------------
     def enrich_recommendations(self, recommendations, concert_results):
         """Enrich AI recommendations with full concert event details."""
-        # If concert_results is a list of dicts, convert to lookup by id
         if isinstance(concert_results, list):
             concert_lookup = {c["id"]: c for c in concert_results}
         else:
-            concert_lookup = concert_results  # assume already a dict
+            concert_lookup = concert_results
 
         enriched = []
         for rec in recommendations["recommendations"]:
@@ -156,23 +168,24 @@ class ConcertsService:
             enriched.append(
                 {
                     "rank": rec["rank"],
-                    "event": event,  # replace event_id with actual event object
+                    "event": event,
                     "reason": rec["reason"],
                 }
             )
         return {"recommendations": enriched}
 
+    # ----------------------------------------------------------------------
+    # AI-powered recommendations
+    # ----------------------------------------------------------------------
     async def get_curated_concert_recommendations(self, user_input: str):
         """Generate AI-curated concert recommendations based on user input."""
         logger.info(f"Generating recommendations for user input: {user_input}")
         client = GroqClient()
         logger.info(f"Using Groq provider at {client.base_url}")
 
-        # get tokens
         tokens = await client.extract_tokens(user_input=user_input)
         logger.info(f"Extracted tokens: {tokens}")
 
-        # get user preferences
         user_preferences = await client.get_user_preferences(user_input=user_input)
         logger.info(f"Extracted user preferences: {user_preferences}")
 
@@ -199,18 +212,17 @@ class ConcertsService:
             "keyword": keywords,
             "concert_data_provider": None,
         }
-        # get concert data
+
         concert_results = await self.search(**client_params)
         logger.info(
-            f"Fetched concert results, a total of:\
-              {len(concert_results.get('data', []))} events"
+            f"Fetched concert results, total: {len(concert_results.get('data', []))} events"
         )
 
-        # get recommendations
         recommendations = await client.create_recommendations(
             user_preferences=user_preferences,
             events=concert_results.get("data", []),
         )
+
         return self.enrich_recommendations(
             recommendations, concert_results.get("data", [])
         )

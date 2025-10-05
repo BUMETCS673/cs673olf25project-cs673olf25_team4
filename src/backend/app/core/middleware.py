@@ -1,11 +1,11 @@
 """
-Security Middleware for BeatMap Backend.
+Security and HTTP Middleware for BeatMap Backend.
 
-Provides comprehensive middleware including:
-- HTTPS redirection
+Includes:
+- HTTPS redirection (proxy-aware)
 - Security headers
 - Request logging
-- Basic rate limiting
+- Basic in-memory rate limiting
 """
 
 import logging
@@ -27,7 +27,12 @@ logger = logging.getLogger(__name__)
 
 
 class HTTPSRedirectMiddleware(BaseHTTPMiddleware):
-    """Middleware to redirect HTTP requests to HTTPS."""
+    """
+    Middleware to redirect HTTP requests to HTTPS, proxy-aware.
+
+    - Skips redirect for health/metrics endpoints.
+    - Respects 'X-Forwarded-Proto' and 'X-Forwarded-Ssl' headers (from reverse proxies).
+    """
 
     def __init__(self, app: ASGIApp, ssl_settings: SSLSettings):
         super().__init__(app)
@@ -41,22 +46,25 @@ class HTTPSRedirectMiddleware(BaseHTTPMiddleware):
         if request.url.path in ["/health", "/metrics", "/favicon.ico"]:
             return await call_next(request)
 
-        is_https = (
-            request.url.scheme == "https"
-            or request.headers.get("x-forwarded-proto") == "https"
-            or request.headers.get("x-forwarded-ssl") == "on"
+        # --- Determine if the request is already HTTPS ---
+        proto_header = (
+            request.headers.get("x-forwarded-proto")
+            or ("https" if request.headers.get("x-forwarded-ssl") == "on" else None)
         )
+        is_https = (proto_header == "https") or (request.url.scheme == "https")
 
         if not is_https:
             https_url = request.url.replace(
                 scheme="https",
                 port=(
-                    self.ssl_settings.https_port
-                    if self.ssl_settings.https_port != 443
+                    getattr(self.ssl_settings, "https_port", 443)
+                    if getattr(self.ssl_settings, "https_port", 443) != 443
                     else None
                 ),
             )
-            logger.info(f"Redirecting HTTP to HTTPS: {request.url} -> {https_url}")
+            logger.info(
+                f"[HTTPSRedirectMiddleware] Redirecting HTTP→HTTPS: {request.url} → {https_url}"
+            )
             return RedirectResponse(url=str(https_url), status_code=301)
 
         return await call_next(request)
@@ -75,23 +83,17 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
         self.ssl_settings = ssl_settings
 
     async def dispatch(self, request: Request, call_next: Callable) -> Response:
-        """Add security headers to response."""
         response = await call_next(request)
 
-        # --- HTTPS Strict Transport Security ---
+        # --- HTTPS Strict Transport Security (HSTS) ---
         if self.ssl_settings.ssl_enabled and self.ssl_settings.hsts_enabled:
-            is_https = (
-                request.url.scheme == "https"
-                or request.headers.get("x-forwarded-proto") == "https"
-                or request.headers.get("x-forwarded-ssl") == "on"
-            )
-            if is_https:
+            proto = request.headers.get("x-forwarded-proto") or request.url.scheme
+            if proto == "https":
                 hsts_header = self.ssl_settings.get_hsts_header()
                 if hsts_header:
                     response.headers["Strict-Transport-Security"] = hsts_header
 
         # --- Content Security Policy (CSP) ---
-        # Relaxed CSP for FastAPI docs & OpenAPI JSON
         if any(path in str(request.url) for path in ["/docs", "/openapi.json"]):
             response.headers["Content-Security-Policy"] = (
                 "default-src 'self'; "
@@ -105,16 +107,13 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
             if csp_header:
                 response.headers["Content-Security-Policy"] = csp_header
 
-        # --- Other standard security headers ---
+        # --- Other standard headers ---
         if self.ssl_settings.x_frame_options:
             response.headers["X-Frame-Options"] = self.ssl_settings.x_frame_options
-
         if self.ssl_settings.x_content_type_options:
             response.headers["X-Content-Type-Options"] = "nosniff"
-
         if self.ssl_settings.x_xss_protection:
             response.headers["X-XSS-Protection"] = self.ssl_settings.x_xss_protection
-
         if self.ssl_settings.referrer_policy:
             response.headers["Referrer-Policy"] = self.ssl_settings.referrer_policy
 
@@ -122,18 +121,14 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
         if permissions_policy:
             response.headers["Permissions-Policy"] = permissions_policy
 
-        # --- Cross-origin protection headers ---
+        # --- Cross-origin and privacy headers ---
         response.headers["Cross-Origin-Embedder-Policy"] = "require-corp"
         response.headers["Cross-Origin-Opener-Policy"] = "same-origin"
         response.headers["Cross-Origin-Resource-Policy"] = "same-site"
-
-        # --- Misc security & privacy headers ---
         response.headers["X-Permitted-Cross-Domain-Policies"] = "none"
         response.headers["X-DNS-Prefetch-Control"] = "off"
 
         # --- Mask server header ---
-        if "Server" in response.headers:
-            del response.headers["Server"]
         response.headers["Server"] = "BeatMap"
 
         return response
@@ -152,28 +147,23 @@ class RequestLoggingMiddleware(BaseHTTPMiddleware):
         self.ssl_settings = ssl_settings
 
     async def dispatch(self, request: Request, call_next: Callable) -> Response:
-        client_ip = self.get_client_ip(request)
+        client_ip = self._get_client_ip(request)
         user_agent = request.headers.get("user-agent", "Unknown")
-        is_https = (
-            request.url.scheme == "https"
-            or request.headers.get("x-forwarded-proto") == "https"
-            or request.headers.get("x-forwarded-ssl") == "on"
-        )
+        proto = request.headers.get("x-forwarded-proto") or request.url.scheme
 
         logger.info(
             f"Request: {request.method} {request.url.path} "
-            f"from {client_ip} via {'HTTPS' if is_https else 'HTTP'} "
+            f"from {client_ip} via {proto.upper()} "
             f"User-Agent: {user_agent[:100]}"
         )
 
         try:
             response = await call_next(request)
             logger.info(
-                f"Response: {response.status_code} for "
-                f"{request.method} {request.url.path} to {client_ip}"
+                f"Response: {response.status_code} for {request.method} "
+                f"{request.url.path} to {client_ip}"
             )
             return response
-
         except Exception as e:
             logger.error(
                 f"Request failed: {request.method} {request.url.path} "
@@ -181,8 +171,7 @@ class RequestLoggingMiddleware(BaseHTTPMiddleware):
             )
             raise
 
-    def get_client_ip(self, request: Request) -> str:
-        """Extract client IP address from headers."""
+    def _get_client_ip(self, request: Request) -> str:
         for header in [
             "x-forwarded-for",
             "x-real-ip",
@@ -192,10 +181,8 @@ class RequestLoggingMiddleware(BaseHTTPMiddleware):
             value = request.headers.get(header)
             if value:
                 return value.split(",")[0].strip()
-
         if hasattr(request, "client") and request.client:
             return request.client.host
-
         return "unknown"
 
 
@@ -223,12 +210,12 @@ class RateLimitingMiddleware(BaseHTTPMiddleware):
         if request.url.path in ["/health", "/metrics"]:
             return await call_next(request)
 
-        client_ip = self.get_client_ip(request)
+        client_ip = self._get_client_ip(request)
         current_time = int(time.time())
 
-        # Clean old entries
+        # Clean up every 60s
         if current_time - self.last_cleanup > 60:
-            self.cleanup_old_entries(current_time)
+            self._cleanup_old_entries(current_time)
             self.last_cleanup = current_time
 
         minute_window = current_time // 60
@@ -247,20 +234,16 @@ class RateLimitingMiddleware(BaseHTTPMiddleware):
 
         return await call_next(request)
 
-    def get_client_ip(self, request: Request) -> str:
-        """Extract client IP from headers or fallback to socket."""
+    def _get_client_ip(self, request: Request) -> str:
         for header in ["x-forwarded-for", "x-real-ip", "x-client-ip"]:
             value = request.headers.get(header)
             if value:
                 return value.split(",")[0].strip()
-
         if hasattr(request, "client") and request.client:
             return request.client.host
-
         return "unknown"
 
-    def cleanup_old_entries(self, current_time: int):
-        """Purge old rate-limit entries."""
+    def _cleanup_old_entries(self, current_time: int):
         current_minute = current_time // 60
         old_keys = [
             k
