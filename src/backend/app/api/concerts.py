@@ -23,7 +23,9 @@ class ConcertsService:
         self.router = APIRouter(tags=["concerts"])
 
         # --- Register routes (support /concerts and /concerts/) ---
-        self.router.add_api_route("", self.root, methods=["GET"], tags=["concerts"], include_in_schema=False)
+        self.router.add_api_route(
+            "", self.root, methods=["GET"], tags=["concerts"], include_in_schema=False
+        )
         self.router.add_api_route("/", self.root, methods=["GET"], tags=["concerts"])
         self.router.add_api_route(
             "/search", self.search, methods=["GET"], tags=["concerts"]
@@ -61,21 +63,31 @@ class ConcertsService:
     # ----------------------------------------------------------------------
     # Root route → delegates to AI recommendations
     # ----------------------------------------------------------------------
-    async def root(self, user_input: Optional[str] = Query(None, description="Natural-language user input")):
+    async def root(
+        self,
+        user_input: Optional[str] = Query(
+            None, description="Natural-language user input"
+        ),
+    ):
         """
         Root endpoint delegates to AI recommendations.
         Example:
         GET /concerts?user_input=rock+concerts+in+Boston+next+week
         """
         if not user_input:
-            logger.warning("No user_input provided to /concerts; returning guidance message.")
+            logger.warning(
+                "No user_input provided to /concerts; returning guidance message."
+            )
             return {
                 "status": "ok",
                 "message": "Please provide a 'user_input' query parameter. "
-                           "Example: /concerts?user_input=rock+concerts+in+Boston+next+week"
+                "Example: /concerts?user_input=rock+concerts+in+Boston+next+week",
             }
 
-        logger.info(f"Root /concerts called → forwarding to get_curated_concert_recommendations() with input: {user_input}")
+        logger.info(
+            f"Root /concerts called → forwarding to\
+            get_curated_concert_recommendations() with input: {user_input}"
+        )
         return await self.get_curated_concert_recommendations(user_input=user_input)
 
     # ----------------------------------------------------------------------
@@ -113,7 +125,9 @@ class ConcertsService:
         logger.info(f"Using provider: {concert_data_provider}")
         try:
             clean = {k: v for k, v in params.items() if v is not None}
-            async with httpx.AsyncClient(timeout=20.0, verify=self.verify_ssl) as client:
+            async with httpx.AsyncClient(
+                timeout=20.0, verify=self.verify_ssl
+            ) as client:
                 response = await client.get(
                     f"{self.concert_data_providers[concert_data_provider]}/search",
                     params=clean,
@@ -127,13 +141,18 @@ class ConcertsService:
             )
             raise HTTPException(
                 status_code=502,
-                detail=f"Provider {concert_data_provider} returned error: {e.response.status_code}",
+                detail=f"Provider {concert_data_provider} \
+                    returned error: {e.response.status_code}",
             )
         except httpx.RequestError as e:
-            logger.error(f"Request error to provider {concert_data_provider}: {str(e)}")
+            logger.error(
+                f"Request error to provider \
+                         {concert_data_provider}: {str(e)}"
+            )
             raise HTTPException(
                 status_code=502,
-                detail=f"Error connecting to provider {concert_data_provider}: {str(e)}",
+                detail=f"Error connecting to provider \
+                    {concert_data_provider}: {str(e)}",
             )
         except Exception as e:
             logger.error(
@@ -215,7 +234,8 @@ class ConcertsService:
 
         concert_results = await self.search(**client_params)
         logger.info(
-            f"Fetched concert results, total: {len(concert_results.get('data', []))} events"
+            f"Fetched concert results, \
+                total:{len(concert_results.get('data', []))} events"
         )
 
         recommendations = await client.create_recommendations(

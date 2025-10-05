@@ -47,9 +47,8 @@ class HTTPSRedirectMiddleware(BaseHTTPMiddleware):
             return await call_next(request)
 
         # --- Determine if the request is already HTTPS ---
-        proto_header = (
-            request.headers.get("x-forwarded-proto")
-            or ("https" if request.headers.get("x-forwarded-ssl") == "on" else None)
+        proto_header = request.headers.get("x-forwarded-proto") or (
+            "https" if request.headers.get("x-forwarded-ssl") == "on" else None
         )
         is_https = (proto_header == "https") or (request.url.scheme == "https")
 
@@ -63,7 +62,8 @@ class HTTPSRedirectMiddleware(BaseHTTPMiddleware):
                 ),
             )
             logger.info(
-                f"[HTTPSRedirectMiddleware] Redirecting HTTP→HTTPS: {request.url} → {https_url}"
+                f"[HTTPSRedirectMiddleware] Redirecting\
+                      HTTP→HTTPS: {request.url} → {https_url}"
             )
             return RedirectResponse(url=str(https_url), status_code=301)
 

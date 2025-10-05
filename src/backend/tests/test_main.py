@@ -29,6 +29,7 @@ Notes:
 
 # --- Mock setup ---
 
+
 class MockResponse:
     def __init__(self, json_data=None, status_code=200):
         self._json = json_data or {}
@@ -62,17 +63,21 @@ FULL_EVENT = {
     ]
 }
 
+
 async def mock_get_success(self, url, params=None, **kwargs):
     return MockResponse(FULL_EVENT)
 
+
 async def mock_get_fail(self, url, params=None, **kwargs):
     return MockResponse({"error": "fail"}, status_code=500)
+
 
 async def mock_get_timeout(self, url, params=None, **kwargs):
     raise httpx.TimeoutException("Request timed out")
 
 
 # --- Tests ---
+
 
 def test_root_status_code():
     """Root endpoint should return 200"""
