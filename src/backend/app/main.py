@@ -27,9 +27,8 @@ def create_app() -> FastAPI:
         allow_headers=["*"],
     )
 
-    # Register ConcertsService
     concerts_service = ConcertsService()
-    app.include_router(concerts_service.router)
+    app.include_router(concerts_service.router, prefix="/concerts")
 
     return app
 
@@ -40,9 +39,7 @@ app = create_app()
 
 def main():
     """Run the backend with uvicorn directly."""
-    host = os.getenv(
-        "BEATMAP_HOST", "127.0.0.1"
-    )  # default to localhost to avoid binding all interfaces
+    host = os.getenv("BEATMAP_HOST", "127.0.0.1")
     port = int(os.getenv("BEATMAP_PORT", "8000"))
 
     uvicorn.run(

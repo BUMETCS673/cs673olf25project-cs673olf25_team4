@@ -8,15 +8,13 @@ function NLForm() {
   const handleSubmit = (e) => {
     e.preventDefault();
 
-    const mock = {
-      results: [
-        { artist: "Taylor Swift", date: "2025-10-05", venue: "TD Garden", city: "Boston" },
-        { artist: "Coldplay", date: "2025-10-06", venue: "Fenway Park", city: "Boston" }
-      ],
-      summary: "Top pick: Taylor Swift at TD Garden on Oct 5."
-    };
+    if (!query.trim()) {
+      alert("Please enter something!");
+      return;
+    }
 
-    navigate('/results', { state: { query, results: mock.results, summary: mock.summary } });
+    // ✅ 跳转时将自然语言输入放入 URL 参数中
+    navigate(`/results?user_input=${encodeURIComponent(query)}`);
   };
 
   return (
@@ -27,8 +25,8 @@ function NLForm() {
         name="nlq"
         value={query}
         onChange={(e) => setQuery(e.target.value)}
-        placeholder="e.g. Rock shows in Boston, June 10–15, Radiohead, Jazz…"
-        style={{ fontSize: "18px", fontFamily: "inherit"}}
+        placeholder="e.g. I want to see Taylor Swift in Boston next May"
+        style={{ fontSize: "18px", fontFamily: "inherit" }}
       />
       <button className="btn" type="submit">Let's go!</button>
     </form>

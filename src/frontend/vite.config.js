@@ -8,4 +8,12 @@ export default defineConfig({
   build: {
     outDir: 'dist',
   },
+  server: {
+    proxy: {
+      '/concerts': {
+        target: 'http://concert_backend:8000', 
+        changeOrigin: true,
+      },
+    },
+  },
 })

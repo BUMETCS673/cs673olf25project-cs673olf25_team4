@@ -1,3 +1,5 @@
+version: "3.9"
+
 services:
   backend:
     build:
@@ -19,9 +21,8 @@ services:
       TM_API_KEY: ${TM_API_KEY}
       GROQ_API_KEY: ${GROQ_API_KEY}
       TM_BASE_URL: https://app.ticketmaster.com/discovery/v2
-      # Backend should call providers by service name + container port (both = 8000)
       TM_PROVIDER_URL: http://ticketmaster_provider:8000
-      TICKETMASTER_API_URL: http://ticketmaster_provider:8000   # fallback for older code
+      TICKETMASTER_API_URL: http://ticketmaster_provider:8000
       GROQ_PROVIDER_URL: http://groq_provider:8000
 
   ticketmaster_provider:
@@ -32,12 +33,12 @@ services:
     command: >
       uvicorn ticketmaster_service:app --host 0.0.0.0 --port 8000
     ports:
-      - "8001:8000"   # host:container
+      - "8001:8000"
     environment:
       TM_API_KEY: ${TM_API_KEY}
       TM_API_SECRET: ${TM_API_SECRET}
       TM_BASE_URL: https://app.ticketmaster.com/discovery/v2
-      
+
   jambase_provider:
     build:
       context: .
@@ -48,7 +49,7 @@ services:
     ports:
       - "8002:8000"
     environment:
-      JAMBASE_API_KEY: ${JAMBASE_API_KEY} 
+      JAMBASE_API_KEY: ${JAMBASE_API_KEY}
 
   groq_provider:
     build:
@@ -58,7 +59,7 @@ services:
     command: >
       uvicorn groq_service:app --host 0.0.0.0 --port 8000
     ports:
-      - "8003:8000"   # expose on host 8003
+      - "8003:8000"
     environment:
       GROQ_API_KEY: ${GROQ_API_KEY}
 
@@ -71,6 +72,9 @@ services:
       - "3000:80"
     depends_on:
       - backend
+    volumes:
+      - ./frontend/nginx.conf:/etc/nginx/conf.d/default.conf:ro  # auto reload nginx config if changed
+    restart: always
 
   backend-test:
     build:
