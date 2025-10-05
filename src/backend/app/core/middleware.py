@@ -25,6 +25,7 @@ logger = logging.getLogger(__name__)
 # HTTPS Redirect Middleware
 # ---------------------------------------------------------------------------
 
+
 class HTTPSRedirectMiddleware(BaseHTTPMiddleware):
     """Middleware to redirect HTTP requests to HTTPS."""
 
@@ -64,6 +65,7 @@ class HTTPSRedirectMiddleware(BaseHTTPMiddleware):
 # ---------------------------------------------------------------------------
 # Security Headers Middleware
 # ---------------------------------------------------------------------------
+
 
 class SecurityHeadersMiddleware(BaseHTTPMiddleware):
     """Middleware to add standard security headers to responses."""
@@ -141,6 +143,7 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
 # Request Logging Middleware
 # ---------------------------------------------------------------------------
 
+
 class RequestLoggingMiddleware(BaseHTTPMiddleware):
     """Middleware to log requests for security monitoring."""
 
@@ -199,6 +202,7 @@ class RequestLoggingMiddleware(BaseHTTPMiddleware):
 # ---------------------------------------------------------------------------
 # Basic Rate Limiting Middleware
 # ---------------------------------------------------------------------------
+
 
 class RateLimitingMiddleware(BaseHTTPMiddleware):
     """Simple in-memory rate limiting middleware."""
@@ -259,7 +263,8 @@ class RateLimitingMiddleware(BaseHTTPMiddleware):
         """Purge old rate-limit entries."""
         current_minute = current_time // 60
         old_keys = [
-            k for k in self.request_counts.keys()
+            k
+            for k in self.request_counts.keys()
             if int(k.split(":")[1]) < current_minute - 1
         ]
         for k in old_keys:

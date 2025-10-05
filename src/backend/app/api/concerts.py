@@ -40,17 +40,18 @@ class ConcertsService:
         self.concert_data_providers = {
             "jambase": os.getenv(
                 "JAMBASE_API_URL",
-                os.getenv("JAMBASE_PROVIDER_URL", "https://jambase_provider:8002"),
+                os.getenv("JAMBASE_PROVIDER_URL", "http://jambase_provider:8002"),
             ),
             "ticketmaster": os.getenv(
                 "TICKETMASTER_API_URL",
-                os.getenv("TM_PROVIDER_URL", "https://ticketmaster_provider:8001"),
+                os.getenv("TM_PROVIDER_URL", "http://ticketmaster_provider:8001"),
             ),
         }
 
         self.ai_providers = {
-            "groq": os.getenv("GROQ_API_URL", "https://groq_provider:8003"),
+            "groq": os.getenv("GROQ_API_URL", "http://groq_provider:8003"),
         }
+
 
         self._provider_cycle = cycle(self.concert_data_providers.keys())
 
