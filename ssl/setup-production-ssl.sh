@@ -465,7 +465,7 @@ main() {
       # Ensure Let's Encrypt certs are world-readable for Docker mounts
     info "Fixing permissions for Let's Encrypt certs..."
     chmod -R a+r /etc/letsencrypt/live || true
-    chmod -R a+r /etc/letsencrypt/archive || trues
+    chmod -R a+r /etc/letsencrypt/archive || true
     success "Permissions adjusted for Docker access."
 
     copy_certificates
