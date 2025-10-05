@@ -152,8 +152,8 @@ services:
       - "80:80"
       - "443:443"
     volumes:
-      - /etc/letsencrypt/live/beatmap.live:/etc/letsencrypt/live/beatmap.live:ro
-      - /etc/letsencrypt/archive/beatmap.live:/archive/beatmap.live:ro
+      - /etc/letsencrypt/live/beatmap.live/fullchain.pem:/etc/nginx/ssl/server.crt:ro
+      - /etc/letsencrypt/live/beatmap.live/privkey.pem:/etc/nginx/ssl/server.key:ro
     depends_on:
       - backend
     environment:
