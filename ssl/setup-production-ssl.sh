@@ -352,7 +352,6 @@ if /usr/bin/certbot renew --quiet --deploy-hook "/usr/local/bin/deploy-productio
   log "Renewal check OK"
 else
   log "ERROR: Renewal failed"
-  # Optional: mail alert if mailx is installed
   command -v mail >/dev/null 2>&1 && echo "SSL Renewal Failure $(hostname) $(date)" | mail -s "SSL Renewal Failure" admin@beatmap.live || true
 fi
 EOF
@@ -369,24 +368,20 @@ log(){ echo "$(date '+%Y-%m-%d %H:%M:%S'): $*" >> "${LOG_FILE}"; }
 
 if [[ -f "${CERT_DIR}/fullchain.pem" && -f "${CERT_DIR}/privkey.pem" ]]; then
   log "Deploying renewed certificates..."
-  # Backup current
   if [[ -f "${APP_SSL_DIR}/server.crt" ]]; then
     cp "${APP_SSL_DIR}/server.crt" "${APP_SSL_DIR}/server.crt.backup.$(date +%s)"
     cp "${APP_SSL_DIR}/server.key" "${APP_SSL_DIR}/server.key.backup.$(date +%s)"
   fi
-  # Copy new
   cp "${CERT_DIR}/fullchain.pem" "${APP_SSL_DIR}/server.crt"
   cp "${CERT_DIR}/privkey.pem"   "${APP_SSL_DIR}/server.key"
   [[ -f "${CERT_DIR}/chain.pem" ]] && cp "${CERT_DIR}/chain.pem" "${APP_SSL_DIR}/chain.pem" || true
   chmod 644 "${APP_SSL_DIR}/server.crt" "${APP_SSL_DIR}/chain.pem" 2>/dev/null || true
   chmod 600 "${APP_SSL_DIR}/server.key"
 
-  # Reload services gracefully
   if systemctl is-active --quiet nginx; then
     systemctl reload nginx
     log "Reloaded nginx"
   fi
-
   if command -v docker >/dev/null 2>&1; then
     docker ps --format "{{.Names}}" | grep -q "beatmap_frontend" && docker restart beatmap_frontend && log "Restarted beatmap_frontend" || true
     docker ps --format "{{.Names}}" | grep -q "concert_backend"   && docker restart concert_backend   && log "Restarted concert_backend" || true
@@ -398,17 +393,59 @@ fi
 EOF
   chmod +x "${deploy_script}"
 
-  # Cron @ 03:00 daily
-  local cron_job="0 3 * * * ${renewal_script} >> /var/log/ssl-renewal.log 2>&1"
-  if ! crontab -l 2>/dev/null | grep -q "renew-production-ssl.sh"; then
-    (crontab -l 2>/dev/null; echo "${cron_job}") | crontab -
-    success "Auto-renewal cron installed."
-  else
-    info "Auto-renewal cron already present."
+  # --- Try cron first ---
+  if ! command -v crontab >/dev/null 2>&1; then
+    info "crontab not found — installing cron service..."
+    if [[ -f /etc/redhat-release ]]; then
+      yum install -y cronie >/dev/null 2>&1 || true
+      systemctl enable --now crond >/dev/null 2>&1 || true
+    elif [[ -f /etc/debian_version ]]; then
+      apt-get update -y >/dev/null 2>&1 || true
+      apt-get install -y cron >/dev/null 2>&1 || true
+      systemctl enable --now cron >/dev/null 2>&1 || true
+    fi
   fi
 
-  success "Renewal scripts installed."
+  if command -v crontab >/dev/null 2>&1; then
+    local cron_job="0 3 * * * ${renewal_script} >> /var/log/ssl-renewal.log 2>&1"
+    if ! crontab -l 2>/dev/null | grep -q "renew-production-ssl.sh"; then
+      (crontab -l 2>/dev/null; echo "${cron_job}") | crontab -
+      success "Auto-renewal via cron installed (daily at 03:00)."
+    else
+      info "Auto-renewal cron already present."
+    fi
+    return 0
+  fi
+
+  # --- Fallback to systemd timer ---
+  warn "Cron unavailable — falling back to systemd timer for renewal."
+  local svc="/etc/systemd/system/beatmap-ssl-renew.service"
+  local tmr="/etc/systemd/system/beatmap-ssl-renew.timer"
+
+  cat > "${svc}" <<EOF
+[Unit]
+Description=Beatmap SSL renewal
+
+[Service]
+Type=oneshot
+ExecStart=${renewal_script}
+EOF
+
+  cat > "${tmr}" <<EOF
+[Unit]
+Description=Run Beatmap SSL renewal daily at 03:00
+[Timer]
+OnCalendar=*-*-* 03:00:00
+Persistent=true
+[Install]
+WantedBy=timers.target
+EOF
+
+  systemctl daemon-reload
+  systemctl enable --now beatmap-ssl-renew.timer
+  success "Auto-renewal via systemd timer installed (daily at 03:00)."
 }
+
 
 # =======================
 # Main
