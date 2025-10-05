@@ -35,7 +35,7 @@ def create_app() -> FastAPI:
         version=APP_VERSION,
         debug=DEBUG,
         docs_url="/docs",
-        redoc_url="/redoc,
+        redoc_url="/redoc",
     )
 
     # Add security middleware (order matters!)
