@@ -1,7 +1,5 @@
-"""
-config.py
+"""Centralized configuration for provider service URLs.
 
-Centralized configuration for provider service URLs.
 Loads from environment variables with sensible defaults for Docker Compose.
 """
 

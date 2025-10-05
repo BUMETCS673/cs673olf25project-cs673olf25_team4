@@ -1,5 +1,10 @@
-fastapi==0.111.0
-uvicorn[standard]==0.30.1
+fastapi>=0.115.10  # Updated for security
+uvicorn[standard]==0.30.0
 httpx==0.27.0
 pydantic==2.7.4
 groq>=0.8.0
+# Security updates for vulnerable dependencies
+certifi>=2024.7.4  # CVE-2024-39689
+idna>=3.7  # CVE-2024-3651
+urllib3>=2.5.0  # CVE-2025-50181, CVE-2025-50182, CVE-2024-37891
+requests>=2.32.4  # CVE-2024-47081, CVE-2024-35195

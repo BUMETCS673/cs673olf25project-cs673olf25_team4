@@ -1,3 +1,5 @@
+"""Test suite for Groq client functionality."""
+
 import pytest
 import httpx
 from app.core.groq_client import GroqClient
