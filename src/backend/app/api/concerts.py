@@ -1,4 +1,8 @@
-"""Concert search and AI-powered recommendation endpoints."""
+"""Concert search and AI-powered recommendation endpoints.
+
+This file was generated with the help of AI. 70% of the code was written by AI, 
+while the remaining 30% was added/modified by humans.
+"""
 
 import os
 from typing import Optional

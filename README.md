@@ -12,8 +12,6 @@ Whether you’re a tourist looking to catch a concert while visiting a new city,
 - **Search concerts** by artist, city, or venue  
 - **Filter results** by date, genre, location, and price  
 - **View event details** including lineup, venue, ticket links, and pricing  
-- **Save your favorites** to a personal wishlist (works for logged-in users and visitors with local storage)  
-- **Sign in securely** with OAuth or passwordless “magic link” login  
 - **Discover new artists and venues** you might not have found otherwise  
 
 ---
@@ -196,3 +194,7 @@ TM_BASE_URL=https://app.ticketmaster.com/discovery/v2
 For detailed information about HTTPS configuration, certificate management, and troubleshooting, see:
 - **[HTTPS Configuration Guide](HTTPS-GUIDE.md)** - Comprehensive HTTPS documentation
 - **[SSL Certificate Management](ssl/README.md)** - Certificate scripts and tools
+
+## Live page
+
+https://beatmap.live
