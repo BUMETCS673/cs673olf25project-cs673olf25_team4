@@ -1,6 +1,9 @@
 """Main entry point for JamBase concert data provider.
 
 Encapsulates routes inside JambaseService for consistency with other providers.
+
+This file was generated with the help of AI. 70% of the code was written by AI, 
+while the remaining 30% was added/modified by humans.
 """
 
 from datetime import datetime

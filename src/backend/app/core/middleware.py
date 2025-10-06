@@ -6,6 +6,10 @@ Includes:
 - Security headers
 - Request logging
 - Basic in-memory rate limiting
+
+This file was generated with the help of AI. 80% of the code was written by AI, 
+while the remaining 20% was added/modified by humans.
+
 """
 
 import logging

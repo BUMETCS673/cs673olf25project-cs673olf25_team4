@@ -1,3 +1,6 @@
+{/*/ This file was generated with the help of AI. 90% of the code was written by AI, 
+while the remaining 10% was added/modified by humans. */}
+
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import SearchPage from './pages/SearchPage';
 import ResultsPage from './pages/ResultsPage';
