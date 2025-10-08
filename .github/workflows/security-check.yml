@@ -23,7 +23,7 @@ on:
 # ------------------------------------------------------
 
 jobs:
-  security:
+  backend-security:
     runs-on: ubuntu-latest
     continue-on-error: true  # TEMPORARY: remove in Phase 3
     steps:
