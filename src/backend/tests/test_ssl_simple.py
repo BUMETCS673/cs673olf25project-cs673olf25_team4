@@ -30,9 +30,7 @@ class TestSSLSettingsSimple:
         assert settings.environment == "development"
 
     def test_ssl_enabled_in_production(self):
-        """
-        TDD Test: SSL should be enabled when explicitly configured for production.
-        """
+        """TDD Test: SSL should be enabled when explicitly configured for production."""
         # RED: Test production SSL configuration
         production_env = {
             "ENVIRONMENT": "production",
@@ -49,9 +47,7 @@ class TestSSLSettingsSimple:
         assert settings.environment == "production"
 
     def test_hsts_header_generation(self):
-        """
-        TDD Test: HSTS headers should be properly formatted.
-        """
+        """TDD Test: HSTS headers should be properly formatted."""
         # RED: Test HSTS header format
         settings = SSLSettings(
             hsts_enabled=True, hsts_max_age=31536000, hsts_include_subdomains=True
@@ -65,9 +61,7 @@ class TestSSLSettingsSimple:
         assert "includeSubDomains" in header
 
     def test_environment_variable_parsing(self):
-        """
-        TDD Test: Boolean environment variables should parse correctly.
-        """
+        """TDD Test: Boolean environment variables should parse correctly."""
         # RED: Test string to boolean conversion
         test_cases = [("true", True), ("false", False), ("1", True), ("0", False)]
 

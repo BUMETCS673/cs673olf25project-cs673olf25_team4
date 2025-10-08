@@ -18,7 +18,7 @@ scenarios("../features/ssl_simple.feature")
 # Test context fixture
 @pytest.fixture
 def ssl_context():
-    """Simple context for SSL tests."""
+    """Provide simple context for SSL tests."""
     return {}
 
 

@@ -27,6 +27,7 @@ class ConcertsService:
     """Service for handling concert search and AI-powered recommendations."""
 
     def __init__(self):
+        """Initialize the ConcertsService with router and provider configuration."""
         self.router = APIRouter(tags=["concerts"])
 
         # --- Register routes (support /concerts and /concerts/) ---
@@ -76,8 +77,8 @@ class ConcertsService:
             None, description="Natural-language user input"
         ),
     ):
-        """
-        Root endpoint delegates to AI recommendations.
+        """Root endpoint delegates to AI recommendations.
+
         Example:
         GET /concerts?user_input=rock+concerts+in+Boston+next+week
         """
