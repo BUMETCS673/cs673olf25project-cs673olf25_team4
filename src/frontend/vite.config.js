@@ -5,26 +5,27 @@ import path from 'path'
 
 // https://vite.dev/config/
 export default defineConfig(({ mode }) => {
-  // HTTPS configuration for development
-  const httpsConfig = mode === 'development' ? {
-    https: {
-      key: fs.existsSync('../../ssl/dev/server.key')
-        ? fs.readFileSync('../../ssl/dev/server.key')
-        : undefined,
-      cert: fs.existsSync('../../ssl/dev/server.crt')
-        ? fs.readFileSync('../../ssl/dev/server.crt')
-        : undefined,
-    },
-  } : {};
+  const certPath = path.resolve('../../ssl/dev/server.crt')
+  const keyPath = path.resolve('../../ssl/dev/server.key')
+
+  let httpsConfig = {} // always defined
+
+  // Only add HTTPS if we're in development *and* certs exist
+  if (mode === 'development' && fs.existsSync(certPath) && fs.existsSync(keyPath)) {
+    httpsConfig = {
+      https: {
+        key: fs.readFileSync(keyPath),
+        cert: fs.readFileSync(certPath),
+      },
+    }
+  }
 
   return {
     plugins: [react()],
     base: './',
     build: {
       outDir: 'dist',
-      // Generate source maps for production debugging
       sourcemap: mode === 'production',
-      // Optimize chunks
       rollupOptions: {
         output: {
           manualChunks: {
@@ -34,17 +35,15 @@ export default defineConfig(({ mode }) => {
       },
     },
     server: {
-      port: 3000,
       host: true,
+      port: 3000,
       strictPort: true,
-      ...httpsConfig,
+      ...httpsConfig, // safe to spread even if empty
       proxy: {
-        // Proxy API requests to backend
         '/api': {
           target: process.env.VITE_API_URL || 'http://localhost:8443',
           changeOrigin: true,
-          secure: false, // Allow self-signed certs in development
-          rewrite: (path) => path,
+          secure: false,
         },
         '/concerts': {
           target: process.env.VITE_API_URL || 'http://localhost:8443',
@@ -69,5 +68,6 @@ export default defineConfig(({ mode }) => {
       strictPort: true,
       ...httpsConfig,
     },
-  };
+  }
 })
+
