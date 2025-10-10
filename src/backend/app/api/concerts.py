@@ -1,6 +1,6 @@
 """Concert search and AI-powered recommendation endpoints.
 
-This file was generated with the help of AI. 70% of the code was written by AI, 
+This file was generated with the help of AI. 70% of the code was written by AI,
 while the remaining 30% was added/modified by humans.
 """
 
@@ -11,6 +11,9 @@ from fastapi import APIRouter, Query, HTTPException
 from itertools import cycle
 import logging
 from ..core.groq_client import GroqClient
+
+from interfaces.concert_provider_interface import ConcertProviderInterface
+from typing import Dict
 
 logger = logging.getLogger(__name__)
 
@@ -42,7 +45,7 @@ class ConcertsService:
         )
 
         # --- Provider URLs ---
-        self.concert_data_providers = {
+        self.concert_data_providers: Dict[str, ConcertProviderInterface] = {
             "jambase": os.getenv(
                 "JAMBASE_API_URL",
                 os.getenv("JAMBASE_PROVIDER_URL", "http://jambase_provider:8002"),

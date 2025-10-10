@@ -14,6 +14,7 @@ services:
     volumes:
       - /etc/letsencrypt/live/beatmap.live:/app/ssl:ro
       - /etc/letsencrypt/archive/beatmap.live:/archive/beatmap.live:ro
+      - ./interfaces:/app/interfaces:ro
     depends_on:
       - ticketmaster_provider
       - jambase_provider
@@ -64,6 +65,7 @@ services:
     volumes:
       - /etc/letsencrypt/live/beatmap.live:/app/ssl:ro
       - /etc/letsencrypt/archive/beatmap.live:/archive/beatmap.live:ro
+      - ./interfaces:/app/interfaces:ro
     environment:
       TM_SSL_ENABLED: "true"
       TM_SSL_CERT_PATH: /app/ssl/fullchain.pem
@@ -96,6 +98,7 @@ services:
     volumes:
       - /etc/letsencrypt/live/beatmap.live:/app/ssl:ro
       - /etc/letsencrypt/archive/beatmap.live:/archive/beatmap.live:ro
+      - ./interfaces:/app/interfaces:ro
     environment:
       JAMBASE_SSL_ENABLED: "true"
       JAMBASE_SSL_CERT_PATH: /app/ssl/fullchain.pem

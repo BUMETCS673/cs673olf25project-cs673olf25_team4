@@ -4,6 +4,23 @@ import pytest
 from fastapi.testclient import TestClient
 from app.main import app
 import httpx
+from ...interfaces.concert_provider_interface import ConcertProviderInterface
+
+import sys
+import os
+from pathlib import Path
+
+# Add the project root (where "interfaces" lives) to sys.path
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../../")))
+
+# Add the backend directory to Python path
+backend_dir = Path(__file__).parent
+sys.path.insert(0, str(backend_dir))
+
+# Add the src directory to Python path so 'interfaces' can be found
+src_dir = backend_dir.parent
+sys.path.insert(0, str(src_dir))
+
 
 client = TestClient(app)
 

@@ -2,7 +2,7 @@
 
 Encapsulates routes inside TicketmasterService for consistency with other providers.
 
-This file was generated with the help of AI. 70% of the code was written by AI, 
+This file was generated with the help of AI. 70% of the code was written by AI,
 while the remaining 30% was added/modified by humans.
 """
 
@@ -19,6 +19,8 @@ from dotenv import load_dotenv
 from zoneinfo import ZoneInfo
 import logging
 import random
+
+from interfaces.concert_provider_interface import ConcertProviderInterface
 
 logging.basicConfig(
     level=logging.INFO,  # or DEBUG if you want more detail
@@ -148,7 +150,7 @@ def _parse_event(e: dict) -> EventItem:
 
 
 # ---------- Ticketmaster Service ----------
-class TicketmasterService:
+class TicketmasterService(ConcertProviderInterface):
     """Ticketmaster concert data provider service."""
 
     def __init__(self):
@@ -158,7 +160,7 @@ class TicketmasterService:
         self.router.add_api_route("/", self.root, methods=["GET"], tags=["meta"])
         self.router.add_api_route(
             "/search",
-            self.search_events,
+            self.search,
             methods=["GET"],
             response_model=EventSearchResponse,
             tags=["events"],
@@ -171,6 +173,9 @@ class TicketmasterService:
             tags=["events"],
         )
 
+    def get_source_name(self) -> str:
+        return "ticketmaster"
+
     async def root(self):
         """Health check endpoint."""
         return {
@@ -178,7 +183,7 @@ class TicketmasterService:
             "message": "Ticketmaster service is running.",
         }
 
-    async def search_events(
+    async def search(
         self,
         keyword: Optional[str] = None,
         city: Optional[str] = None,

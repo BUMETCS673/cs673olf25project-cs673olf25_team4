@@ -6,7 +6,7 @@ Provides comprehensive SSL configuration including:
 - HTTPS enforcement settings
 - Environment-aware SSL configuration
 
-This file was generated with the help of AI. 90% of the code was written by AI, 
+This file was generated with the help of AI. 90% of the code was written by AI,
 while the remaining 10% was added/modified by humans.
 """
 
