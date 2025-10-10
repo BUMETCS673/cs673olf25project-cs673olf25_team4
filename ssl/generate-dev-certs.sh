@@ -7,7 +7,9 @@ set -euo pipefail
 
 # Configuration
 DOMAIN="localhost"
-CERT_DIR="ssl/dev"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
+CERT_DIR="$PROJECT_ROOT/ssl/dev"
 DAYS_VALID=365
 KEY_SIZE=2048
 
