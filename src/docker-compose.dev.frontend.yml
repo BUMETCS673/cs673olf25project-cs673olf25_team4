@@ -127,7 +127,7 @@ services:
     container_name: beatmap_frontend_dev
     command: npm run dev                   # Run Vite’s dev server
     ports:
-      - "5173:5173"                        # Default Vite port (adjust if custom)
+      - "3000:3000"
     volumes:
       - ./frontend:/app                    # Mount local source for live reload
       - /app/node_modules                  # Prevent overwriting container deps
