@@ -4,7 +4,6 @@ import pytest
 from fastapi.testclient import TestClient
 from app.main import app
 import httpx
-from ...interfaces.concert_provider_interface import ConcertProviderInterface
 
 import sys
 import os
