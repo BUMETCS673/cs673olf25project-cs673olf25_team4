@@ -76,7 +76,7 @@ function ResultsPage() {
                 <ResultCard
                   key={idx}
                   title={rec.event?.name}
-                  date={rec.event?.date}
+                  date={rec.event?.startDateTime}
                   venue={rec.event?.venue?.name}
                   city={rec.event?.venue?.city}
                   url={rec.event?.url}
