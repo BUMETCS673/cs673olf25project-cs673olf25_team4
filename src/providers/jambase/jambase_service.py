@@ -183,8 +183,14 @@ class JambaseService(ConcertProviderInterface):
         size: int = 50,
     ):
 
+        # Convert comma-separated keywords to space-separated for JamBase
+        processed_keyword = None
+        if keyword and keyword != "unknown":
+            # Replace commas with spaces for JamBase API
+            processed_keyword = keyword.replace(",", " ").strip()
+        
         params = {
-            "keyword": None if keyword == "unknown" else keyword,
+            "keyword": processed_keyword,
             "city": None if city == "unknown" else city,
             "startDateTime": (
                 None
