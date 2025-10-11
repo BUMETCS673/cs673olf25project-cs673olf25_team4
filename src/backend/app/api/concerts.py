@@ -227,27 +227,31 @@ class ConcertsService:
         user_preferences = await client.get_user_preferences(user_input=user_input)
         logger.info(f"Extracted user preferences: {user_preferences}")
 
-        locations = tokens.get("locations", [None])
+        locations = tokens.get("locations", [])
         if locations and len(locations) > 1:
             city = ",".join(locations)
+        elif locations:
+            city = locations[0]
         else:
-            city = locations
+            city = None
         city = None if city == "unknown" else city
         logger.info(f"Using city: {city}")
 
-        artists = tokens.get("artists", [None])
+        artists = tokens.get("artists", [])
         genres = user_preferences.get("genres", [])
         keywords = artists + genres
-        if keywords and len(keywords) > 1:
-            keywords = ",".join(keywords)
+        # Filter out None and "unknown" values
+        keywords = [k for k in keywords if k and k != "unknown"]
+        if keywords:
+            keyword = ",".join(keywords)
         else:
-            keywords = keywords[0]
+            keyword = None
 
         client_params = {
             "city": city,
             "start_date": tokens.get("start_date"),
             "end_date": tokens.get("end_date"),
-            "keyword": keywords,
+            "keyword": keyword,
             "concert_data_provider": None,
         }
 
