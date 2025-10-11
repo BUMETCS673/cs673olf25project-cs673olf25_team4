@@ -256,10 +256,20 @@ class ConcertsService:
         }
 
         concert_results = await self.search(**client_params)
-        logger.info(
-            f"Fetched concert results, \
-                total:{len(concert_results.get('data', []))} events"
-        )
+        events_found = len(concert_results.get("data", []))
+        logger.info(f"Fetched concert results, total: {events_found} events")
+
+        # If no results found, try with a different provider
+        if events_found == 0:
+            logger.info("No results found with first provider, trying alternate provider")
+            # Get the next provider in the cycle
+            alternate_provider = self.get_provider()
+            client_params["concert_data_provider"] = alternate_provider
+            concert_results = await self.search(**client_params)
+            events_found = len(concert_results.get("data", []))
+            logger.info(
+                f"Retry with provider '{alternate_provider}' returned {events_found} events"
+            )
 
         recommendations = await client.create_recommendations(
             user_preferences=user_preferences,
