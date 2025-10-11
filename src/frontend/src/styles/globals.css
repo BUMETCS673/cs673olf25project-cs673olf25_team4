@@ -267,7 +267,7 @@
       }
 
       .loading-animation {
-        font-size: 1.2rem;
+        font-size: 1.5rem;
         font-weight: 600;
         background: linear-gradient(90deg, var(--accent), #06b6d4, var(--accent));
         background-size: 300% auto; /* makes the gradient wider so it can move */

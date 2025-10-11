@@ -1,8 +1,7 @@
-{/*/ This file was generated with the help of AI. 80% of the code was written by AI, 
-while the remaining 20% was added/modified by humans. */}
-
 import { useEffect, useState } from "react";
 import { useLocation } from "react-router-dom";
+import Banner from "../components/Banner";
+import "../styles/globals.css";
 
 function ResultsPage() {
   const [recommendations, setRecommendations] = useState(null);
@@ -23,10 +22,7 @@ function ResultsPage() {
     async function fetchRecommendations() {
       try {
         console.log("Fetching recommendations for:", userInput);
-        console.log("origin:", window.location.origin);
-        const url = `/concerts?user_input=${encodeURIComponent(
-          userInput
-        )}`;
+        const url = `/concerts?user_input=${encodeURIComponent(userInput)}`;
         const response = await fetch(url);
         const contentType = response.headers.get("content-type") || "";
         if (!response.ok) {
@@ -53,27 +49,47 @@ function ResultsPage() {
     fetchRecommendations();
   }, [userInput]);
 
-  if (loading) return <p className="loading-animation">Loading recommendations...</p>;
-  if (error) return <p style={{ color: "red" }}>{error}</p>;
-  if (!recommendations?.length) return <p>No recommendations found.</p>;
-
   return (
-    <div style={{ padding: "20px" }}>
-      <h2>Concert Recommendations</h2>
-      <ul>
-        {recommendations.map((rec, idx) => (
-          <li key={idx} style={{ marginBottom: "20px" }}>
-            <strong>{rec.event?.name || "Unknown Event"}</strong>
-            <br />
-            <em>{rec.event?.venue?.name}</em> — {rec.event?.venue?.city}
-            <br />
-            <a href={rec.event?.url} target="_blank" rel="noopener noreferrer">
-              View Details
-            </a>
-            <p style={{ fontStyle: "italic" }}>{rec.reason}</p>
-          </li>
-        ))}
-      </ul>
+    <div className="results-page">
+      <Banner />
+
+      <div className="results-content">
+        {loading && (
+          <p className="loading-animation">
+            Loading recommendations...
+          </p>
+        )}
+
+        {!loading && error && <p style={{ color: "red" }}>{error}</p>}
+
+        {!loading && !error && !recommendations?.length && (
+          <p>No recommendations found.</p>
+        )}
+
+        {!loading && !error && recommendations?.length > 0 && (
+          <>
+            <h2>Concert Recommendations</h2>
+            <ul>
+              {recommendations.map((rec, idx) => (
+                <li key={idx} style={{ marginBottom: "20px" }}>
+                  <strong>{rec.event?.name || "Unknown Event"}</strong>
+                  <br />
+                  <em>{rec.event?.venue?.name}</em> — {rec.event?.venue?.city}
+                  <br />
+                  <a
+                    href={rec.event?.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    View Details
+                  </a>
+                  <p style={{ fontStyle: "italic" }}>{rec.reason}</p>
+                </li>
+              ))}
+            </ul>
+          </>
+        )}
+      </div>
     </div>
   );
 }
