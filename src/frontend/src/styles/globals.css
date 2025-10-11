@@ -109,7 +109,7 @@
         display: inline-flex;
         align-items: center;
         background: linear-gradient(90deg, var(--accent), #06b6d4);
-        padding: 10px 14px;
+        padding: 10px 50px;
         border-radius: 12px;
         border: none;
         color: white;
@@ -117,9 +117,19 @@
         cursor: pointer;
         margin-top: 14px;
       }
+
       .btn:disabled {
         opacity: 0.6;
         cursor: not-allowed;
+      }
+
+      .subtitle {
+        font-size: 24px;
+        align-self: center;
+        background: linear-gradient(90deg, var(--accent), #2afff4);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text
       }
 
       .results {
@@ -194,10 +204,88 @@
         padding: 30px;;
       }
 
+      .search-page {
+        padding-left: 30px;
+        padding-right: 30px;
+        gap: 2rem;
+      }
+
+      .search-wrapper {
+          position: relative;
+          width: 100%;
+          max-width: 5000px;
+          margin: 0 auto;
+      }
+
+      .search-input {
+          width: 100%;
+          padding: 25px 130px 25px 20px;
+          background: transparent;
+          border: 1px solid rgba(255, 255, 255, 0.04);
+          border-radius: 12px;
+          color: inherit;
+          outline: none;
+          font-size: 14px;
+          height: 2.5rem;
+          box-sizing: border-box;
+      }
+
+      .search-content {
+        display: flex;
+        flex-direction: column;
+        gap: 2rem; /* space between subtitle and input form */
+        margin-top: 1.5rem; /* extra separation below the banner */
+        }
+
+      .search-button {
+          position: absolute;
+          right: 6px;
+          top: 50%;
+          transform: translateY(-50%);
+          height: calc(100% - 18px);
+          padding: 0 24px;
+          border-radius: 10px;
+          border: none;
+          background: linear-gradient(90deg, var(--accent), #06b6d4);
+          color: white;
+          font-weight: 600;
+          cursor: pointer;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+      }
+
+      .search-button:hover {
+        opacity: 0.9;
+      }
+
       @media (max-width: 880px) {
         .container {
           grid-template-columns: 1fr;
           padding: 18px;
+        }
+      }
+
+      .loading-animation {
+        font-size: 1.2rem;
+        font-weight: 600;
+        background: linear-gradient(90deg, var(--accent), #06b6d4, var(--accent));
+        background-size: 300% auto; /* makes the gradient wider so it can move */
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+        animation: shimmer 3s linear infinite;
+        text-align: center;
+        margin-top: 2rem;
+      }
+
+      /* keyframes for the gradient flow */
+      @keyframes shimmer {
+        0% {
+          background-position: 0% center;
+        }
+        100% {
+          background-position: -300% center;
         }
       }
 

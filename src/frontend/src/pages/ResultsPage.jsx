@@ -53,7 +53,7 @@ function ResultsPage() {
     fetchRecommendations();
   }, [userInput]);
 
-  if (loading) return <p>Loading recommendations...</p>;
+  if (loading) return <p className="loading-animation">Loading recommendations...</p>;
   if (error) return <p style={{ color: "red" }}>{error}</p>;
   if (!recommendations?.length) return <p>No recommendations found.</p>;
 
