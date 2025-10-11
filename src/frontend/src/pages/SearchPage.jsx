@@ -21,8 +21,7 @@ export default function SearchPage() {
       <Banner />
 
       <div className="search-content">
-        <h1 className="title">BeatMap</h1>
-        <p className="subtitle">Discover live music that matches your vibe.</p>
+        <p className="subtitle">What concerts are you looking for?</p>
 
         <form onSubmit={handleSubmit} className="search-form">
           <input
@@ -32,7 +31,7 @@ export default function SearchPage() {
             onChange={(e) => setInput(e.target.value)}
             placeholder="e.g. Jazz concerts in Boston next month"
           />
-          <button className="search-btn" type="submit">
+          <button className="btn" type="submit">
             Let's go!
           </button>
         </form>
