@@ -238,6 +238,16 @@ textarea {
   margin-top: 8px;
 }
 
+.card-title span {
+  background: linear-gradient(90deg, var(--accent), #06b6d4);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  background-size: 100% 100%;
+  background-repeat: no-repeat;
+  display: inline; /* Ensures gradient fits text width exactly */
+}
+
 .empty {
   margin-top: 24px;
   color: var(--muted);
