@@ -2,7 +2,7 @@
 
 Encapsulates routes inside JambaseService for consistency with other providers.
 
-This file was generated with the help of AI. 70% of the code was written by AI, 
+This file was generated with the help of AI. 70% of the code was written by AI,
 while the remaining 30% was added/modified by humans.
 """
 
@@ -16,6 +16,8 @@ from fastapi import FastAPI, HTTPException, Query, APIRouter
 from pydantic import BaseModel
 
 import logging
+
+from interfaces.concert_provider_interface import ConcertProviderInterface
 
 logging.basicConfig(
     level=logging.INFO,  # or DEBUG if you want more detail
@@ -146,7 +148,7 @@ def process_date(value: str) -> str:
 
 
 # ---------- Service ----------
-class JambaseService:
+class JambaseService(ConcertProviderInterface):
     """JamBase concert data provider service."""
 
     def __init__(self):
@@ -161,6 +163,9 @@ class JambaseService:
             response_model=EventSearchResponse,
             tags=["events"],
         )
+
+    def get_source_name(self) -> str:
+        return "jambase"
 
     async def root(self):
         """Health check endpoint."""

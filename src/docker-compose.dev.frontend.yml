@@ -12,7 +12,6 @@ services:
       - "8443:8443"   # HTTPS
     volumes:
       - ../ssl/dev:/app/ssl:ro  # Mount development SSL certificates (read-only)
-      - ./interfaces:/app/interfaces:ro
     depends_on:
       - ticketmaster_provider
       - jambase_provider
@@ -57,7 +56,6 @@ services:
       - "8001:8001"   # HTTPS
     volumes:
       - ../ssl/dev:/app/ssl:ro  # Mount development SSL certificates (read-only)
-      - ./interfaces:/app/interfaces:ro
     environment:
       # SSL Configuration
       TM_SSL_ENABLED: "true"
@@ -84,7 +82,6 @@ services:
       - "8002:8002"   # HTTPS
     volumes:
       - ../ssl/dev:/app/ssl:ro  # Mount development SSL certificates (read-only)
-      - ./interfaces:/app/interfaces:ro
     environment:
       # SSL Configuration
       JAMBASE_SSL_ENABLED: "true"
@@ -124,18 +121,21 @@ services:
   frontend:
     build:
       context: ./frontend
-      dockerfile: Dockerfile
+      dockerfile: Dockerfile.dev
       args:
         NODE_ENV: development
     container_name: beatmap_frontend_dev
+    command: npm run dev                   # Run Vite’s dev server
     ports:
-      - "80:80"      # HTTP
-      - "443:443"    # HTTPS
+      - "3000:3000"
     volumes:
-      - ../ssl/dev:/etc/nginx/ssl:ro  # Make certs available where Nginx expects them
+      - ./frontend:/app                    # Mount local source for live reload
+      - /app/node_modules                  # Prevent overwriting container deps
+      - ../ssl/dev:/etc/nginx/ssl:ro       # Optional, if using HTTPS locally
+    environment:
+      - CHOKIDAR_USEPOLLING=true           # Required for file watching in Docker
+      - VITE_API_URL=https://backend:8443
+      - VITE_ENABLE_HTTPS=true
+      - VITE_STRICT_SSL=false
     depends_on:
       - backend
-    environment:
-      VITE_API_URL: https://backend:8443
-      VITE_ENABLE_HTTPS: "true"
-      VITE_STRICT_SSL: "false"  # Allow self-signed certs in development

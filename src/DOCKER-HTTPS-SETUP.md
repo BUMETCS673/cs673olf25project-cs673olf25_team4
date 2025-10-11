@@ -127,6 +127,22 @@ docker compose -f docker-compose.dev.yml down
 
 **Note:** Your browser will show a security warning for self-signed certificates. Click "Advanced" and "Proceed" to continue.
 
+### Frontend Live Testing (React + Vite)
+
+For live testing for frontend changes with automatic reloads (hot reloading and retriggers), use the **frontend live dev container**.  
+This setup runs Vite inside Docker, so your UI updates instantly whenever you edit files locally.
+
+```bash
+# Start frontend live dev container
+docker compose -f docker-compose.dev.frontend.yml up
+
+# View logs
+docker compose -f docker-compose.dev.frontend.yml logs -f
+
+# Stop and remove containers
+docker compose -f docker-compose.dev.frontend.yml down
+```
+
 ### HTTPS Production
 
 Use `docker-compose.prod.yml` with Let's Encrypt certificates:
