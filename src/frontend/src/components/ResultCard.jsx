@@ -1,14 +1,28 @@
-// ResultCard: displays a single concert result (title, date, venue, city)
-// Used inside Results to format each item in the list
-function ResultCard({ title, date, venue, city }) {
+// ResultCard: displays a single concert result (title, date, venue, city, url, reason)
+
+function ResultCard({ title, date, venue, city, url, reason }) {
   return (
     <div className="card">
-      <h3>{title || 'Untitled'}</h3>
-      <p>
-        {date || ''} {venue ? `• ${venue}` : ''} {city ? `— ${city}` : ''}
+      <h3>{title || "Untitled Event"}</h3>
+      <p className="card-details">
+        {[date, venue, city].filter(Boolean).join(" — ")}
       </p>
+
+      {reason && <p className="card-reason">{reason}</p>}
+
+      {url && (
+        <a
+          href={url}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="card-link"
+        >
+          View Details
+        </a>
+      )}
     </div>
   );
 }
 
 export default ResultCard;
+

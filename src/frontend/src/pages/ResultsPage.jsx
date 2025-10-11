@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useLocation } from "react-router-dom";
 import Banner from "../components/Banner";
 import "../styles/globals.css";
+import ResultCard from "../components/ResultCard"
 
 function ResultsPage() {
   const [recommendations, setRecommendations] = useState(null);
@@ -69,24 +70,20 @@ function ResultsPage() {
         {!loading && !error && recommendations?.length > 0 && (
           <>
             <h2>Concert Recommendations</h2>
-            <ul>
+
+            <div className="cards">
               {recommendations.map((rec, idx) => (
-                <li key={idx} style={{ marginBottom: "20px" }}>
-                  <strong>{rec.event?.name || "Unknown Event"}</strong>
-                  <br />
-                  <em>{rec.event?.venue?.name}</em> — {rec.event?.venue?.city}
-                  <br />
-                  <a
-                    href={rec.event?.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                  >
-                    View Details
-                  </a>
-                  <p style={{ fontStyle: "italic" }}>{rec.reason}</p>
-                </li>
+                <ResultCard
+                  key={idx}
+                  title={rec.event?.name}
+                  date={rec.event?.date}
+                  venue={rec.event?.venue?.name}
+                  city={rec.event?.venue?.city}
+                  url={rec.event?.url}
+                  reason={rec.reason}
+                />
               ))}
-            </ul>
+            </div>
           </>
         )}
       </div>
