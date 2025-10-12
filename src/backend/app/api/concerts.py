@@ -228,7 +228,9 @@ class ConcertsService:
         for event in events:
             # Filter out events with no name
             event_name = event.get("name")
-            if not event_name or (isinstance(event_name, str) and not event_name.strip()):
+            if not event_name or (
+                isinstance(event_name, str) and not event_name.strip()
+            ):
                 events_without_name += 1
                 continue
 
@@ -243,7 +245,9 @@ class ConcertsService:
 
                 try:
                     # Parse event date
-                    event_dt = datetime.fromisoformat(event_date_str.replace("Z", "+00:00"))
+                    event_dt = datetime.fromisoformat(
+                        event_date_str.replace("Z", "+00:00")
+                    )
 
                     # Check if event is within range
                     include_event = True
@@ -312,7 +316,7 @@ class ConcertsService:
         # Only fall back to preferences if no location was explicitly mentioned
         token_locations = tokens.get("locations", [])
         preference_locations = user_preferences.get("locations", [])
-        
+
         city = None
         if token_locations and token_locations != ["unknown"]:
             # User explicitly mentioned a location in their query
@@ -355,14 +359,17 @@ class ConcertsService:
 
         # If no results found, try with a different provider
         if events_found == 0:
-            logger.info("No results found with first provider, trying alternate provider")
+            logger.info(
+                "No results found with first provider, trying alternate provider"
+            )
             # Get the next provider in the cycle
             alternate_provider = self.get_provider()
             client_params["concert_data_provider"] = alternate_provider
             concert_results = await self.search(**client_params)
             events_found = len(concert_results.get("data", []))
             logger.info(
-                f"Retry with provider '{alternate_provider}' returned {events_found} events"
+                f"Retry with provider '{alternate_provider}' \
+                    returned {events_found} events"
             )
 
         # Filter events by date range and data quality
@@ -376,6 +383,4 @@ class ConcertsService:
             events=filtered_events,
         )
 
-        return self.enrich_recommendations(
-            recommendations, filtered_events
-        )
+        return self.enrich_recommendations(recommendations, filtered_events)
