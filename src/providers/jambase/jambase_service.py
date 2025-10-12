@@ -78,7 +78,7 @@ class EventSearchResponse(BaseModel):
 
 # ---------- Helpers ----------
 async def get_events(city_str, start_date, end_date, keyword=None):
-    """Queries the JamBase /events endpoint."""
+    """Query the JamBase /events endpoint."""
     jambase_city_id = await get_city_id(city_str)
     logger.info("jambase_city_id: %s", jambase_city_id)
 
@@ -140,8 +140,8 @@ def jambase_parse_performers(performer_list):
 
 
 def process_date(value: str) -> str:
-    """
-    Convert a ddMMyyyy string (e.g. 01012026) into yyyy-MM-dd.
+    """Convert a ddMMyyyy string (e.g. 01012026) into yyyy-MM-dd.
+
     Enforces dates can't be in past.
     """
     try:
@@ -171,6 +171,7 @@ class JambaseService(ConcertProviderInterface):
         )
 
     def get_source_name(self) -> str:
+        """Return the source name for this provider."""
         return "jambase"
 
     async def root(self):
@@ -188,7 +189,7 @@ class JambaseService(ConcertProviderInterface):
         page: int = 0,
         size: int = 50,
     ):
-
+        """Search for concerts using JamBase API."""
         # Convert comma-separated keywords to space-separated for JamBase
         processed_keyword = None
         if keyword and keyword != "unknown":
@@ -305,7 +306,7 @@ class JambaseService(ConcertProviderInterface):
 
 
 def create_app() -> FastAPI:
-    """Factory to build the FastAPI app with JambaseService routes."""
+    """Build the FastAPI app with JambaseService routes."""
     app = FastAPI(title="JamBase Provider", version="1.0.0")
     jambase_service = JambaseService()
     app.include_router(jambase_service.router)

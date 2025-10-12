@@ -30,6 +30,7 @@ success() { echo -e "${GREEN}SUCCESS:${NC} $*"; }
 warn() { echo -e "${YELLOW}WARNING:${NC} $*"; }
 error() { echo -e "${RED}ERROR:${NC} $*"; }
 step() { echo -e "${CYAN}▶${NC} $*"; }
+critical() { echo -e "${MAGENTA}CRITICAL:${NC} $*"; }
 
 # Error handler
 trap 'error "Deployment failed at line $LINENO"' ERR
@@ -285,8 +286,8 @@ deploy_containers() {
 health_check() {
     step "Performing health checks..."
 
-    info "Waiting for services to start (45 seconds)..."
-    sleep 45
+    info "Waiting for services to start (60 seconds)..."
+    sleep 60
 
     HEALTH_FAILED=false
 

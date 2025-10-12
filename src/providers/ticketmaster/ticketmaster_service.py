@@ -174,6 +174,7 @@ class TicketmasterService(ConcertProviderInterface):
         )
 
     def get_source_name(self) -> str:
+        """Return the source name for this provider."""
         return "ticketmaster"
 
     async def root(self):
@@ -291,7 +292,7 @@ class TicketmasterService(ConcertProviderInterface):
 
         # Randomly sample 20 events if more than 20 are found
         if len(all_items) > 20:
-            all_items = random.sample(all_items, 20)
+            all_items = random.sample(all_items, 20)  # nosec B311
         total_elements = len(all_items)
         return EventSearchResponse(
             totalElements=total_elements,
@@ -308,7 +309,7 @@ class TicketmasterService(ConcertProviderInterface):
 
 
 def create_app() -> FastAPI:
-    """Factory to build the FastAPI app with TicketmasterService routes."""
+    """Build the FastAPI app with TicketmasterService routes."""
     app = FastAPI(title="Ticketmaster Provider")
     ticketmaster_service = TicketmasterService()
     app.include_router(ticketmaster_service.router)

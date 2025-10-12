@@ -47,14 +47,19 @@ Notes:
 
 
 class MockResponse:
+    """Mock HTTP response for testing."""
+
     def __init__(self, json_data=None, status_code=200):
+        """Initialize mock response with JSON data and status code."""
         self._json = json_data or {}
         self.status_code = status_code
 
     def json(self):
+        """Return JSON data."""
         return self._json
 
     def raise_for_status(self):
+        """Raise HTTPStatusError if status code indicates failure."""
         if self.status_code >= 400:
             raise httpx.HTTPStatusError("error", request=None, response=None)
 
@@ -81,14 +86,17 @@ FULL_EVENT = {
 
 
 async def mock_get_success(self, url, params=None, **kwargs):
+    """Return successful mock response."""
     return MockResponse(FULL_EVENT)
 
 
 async def mock_get_fail(self, url, params=None, **kwargs):
+    """Return failed mock response."""
     return MockResponse({"error": "fail"}, status_code=500)
 
 
 async def mock_get_timeout(self, url, params=None, **kwargs):
+    """Raise timeout exception."""
     raise httpx.TimeoutException("Request timed out")
 
 
@@ -96,13 +104,13 @@ async def mock_get_timeout(self, url, params=None, **kwargs):
 
 
 def test_root_status_code():
-    """Root endpoint should return 200"""
+    """Root endpoint should return 200."""
     resp = client.get("/")
     assert resp.status_code == 200
 
 
 def test_root_content():
-    """Root endpoint should contain status and message"""
+    """Root endpoint should contain status and message."""
     resp = client.get("/")
     data = resp.json()
     assert data["status"] == "ok"
@@ -111,7 +119,7 @@ def test_root_content():
 
 @pytest.mark.parametrize("provider", ["jambase", "ticketmaster"])
 def test_search_success(monkeypatch, provider):
-    """Search endpoint should return full event data"""
+    """Search endpoint should return full event data."""
     monkeypatch.setattr("httpx.AsyncClient.get", mock_get_success)
 
     resp = client.get("/search", params={"city": "Boston", "provider": provider})
@@ -128,13 +136,13 @@ def test_search_success(monkeypatch, provider):
 
 
 def test_search_invalid_provider():
-    """Search should fail with invalid provider"""
+    """Search should fail with invalid provider."""
     resp = client.get("/search", params={"city": "Boston", "provider": "invalid"})
     assert resp.status_code == 400
 
 
 def test_search_api_fail(monkeypatch):
-    """Search should return 502 if provider API fails"""
+    """Search should return 502 if provider API fails."""
     monkeypatch.setattr("httpx.AsyncClient.get", mock_get_fail)
     resp = client.get("/search", params={"city": "Boston", "provider": "ticketmaster"})
     assert resp.status_code == 502
@@ -142,7 +150,7 @@ def test_search_api_fail(monkeypatch):
 
 
 def test_search_api_timeout(monkeypatch):
-    """Search should return 502 if provider API times out"""
+    """Search should return 502 if provider API times out."""
     monkeypatch.setattr("httpx.AsyncClient.get", mock_get_timeout)
     resp = client.get("/search", params={"city": "Boston", "provider": "ticketmaster"})
     assert resp.status_code == 502
