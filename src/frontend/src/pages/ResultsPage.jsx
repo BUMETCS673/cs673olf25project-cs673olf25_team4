@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useLocation } from "react-router-dom";
 import Banner from "../components/Banner";
 import "../styles/globals.css";
-import ResultCard from "../components/ResultCard"
+import ResultsPanel from "../components/ResultsPanel";
 
 function ResultsPage() {
   const [recommendations, setRecommendations] = useState(null);
@@ -61,31 +61,32 @@ function ResultsPage() {
           </p>
         )}
 
-        {!loading && error && <p style={{ color: "red" }}>{error}</p>}
+        {!loading && error && (
+          <div className="search-error">
+            <p style={{ color: "red" }}>{error}</p>
+            <button
+              className="new-search-button"
+              onClick={() => (window.location.href = "https://beatmap.live")}
+            >
+              New Search
+            </button>
+          </div>
+        )}
+
 
         {!loading && !error && !recommendations?.length && (
-          <p>No recommendations found.</p>
+          <div className="search-error">
+            <p>No recommendations found.</p>
+            <a href="https://beatmap.live"><button className="btn" type="submit">
+              New Search
+            </button></a>
+          </div>
         )}
 
         {!loading && !error && recommendations?.length > 0 && (
-          <>
-            <h2>Concert Recommendations</h2>
-
-            <div className="cards">
-              {recommendations.map((rec, idx) => (
-                <ResultCard
-                  key={idx}
-                  title={rec.event?.name}
-                  date={rec.event?.startDateTime}
-                  venue={rec.event?.venue?.name}
-                  city={rec.event?.venue?.city}
-                  url={rec.event?.url}
-                  reason={rec.reason}
-                />
-              ))}
-            </div>
-          </>
+          <ResultsPanel recommendations={recommendations} userInput={userInput} />
         )}
+
       </div>
     </div>
   );
