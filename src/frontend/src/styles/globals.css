@@ -116,6 +116,7 @@ textarea {
 .btn {
   display: inline-flex;
   align-items: center;
+  align-self: center;
   background: linear-gradient(90deg, var(--accent), #06b6d4);
   padding: 10px 50px;
   border-radius: 12px;
@@ -124,6 +125,26 @@ textarea {
   font-weight: 600;
   cursor: pointer;
   margin-top: 14px;
+}
+
+.new-search-button {
+  display: inline-flex;
+  align-items: center;
+  align-self: center;
+  background: linear-gradient(90deg, var(--accent), #06b6d4);
+  padding: 10px 50px;
+  border-radius: 12px;
+  border: none;
+  color: white;
+  font-weight: 600;
+  cursor: pointer;
+  margin-top: 14px;
+}
+
+.search-error {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
 }
 
 .btn:disabled {
@@ -151,7 +172,30 @@ textarea {
   display: flex;
   flex-direction: column;
   gap: 12px;
+  align-items: center;
 }
+
+.results-panel {
+  margin: 40px;
+  display: flex;
+  flex-direction: column;
+  min-height: calc(100vh - 80px);
+}
+
+.results-panel h2 {
+  margin-bottom: 1.5rem;
+}
+
+.results-actions {
+  display: flex;
+  justify-content: center;
+  width: 100%;
+  margin-top: 3rem;
+  padding-top: 1.5rem;
+  padding-bottom: 0.5rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
 
 .status {
   color: var(--muted);
@@ -162,8 +206,9 @@ textarea {
   display: flex;
   flex-direction: column;
   grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-  gap: 30px;
+  gap: 18px;
   margin-top: 8px;
+  margin-bottom: 2rem;
 }
 
 .card {

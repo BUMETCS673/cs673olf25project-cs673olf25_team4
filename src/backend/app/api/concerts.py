@@ -5,15 +5,15 @@ while the remaining 30% was added/modified by humans.
 """
 
 import os
-from typing import Optional
+from typing import Optional, List, Dict
 import httpx
 from fastapi import APIRouter, Query, HTTPException
 from itertools import cycle
 import logging
+from datetime import datetime
 from ..core.groq_client import GroqClient
 
 from interfaces.concert_provider_interface import ConcertProviderInterface
-from typing import Dict
 
 logger = logging.getLogger(__name__)
 
@@ -133,7 +133,7 @@ class ConcertsService:
         try:
             clean = {k: v for k, v in params.items() if v is not None}
             async with httpx.AsyncClient(
-                timeout=20.0, verify=self.verify_ssl
+                timeout=40.0, verify=self.verify_ssl
             ) as client:
                 response = await client.get(
                     f"{self.concert_data_providers[concert_data_provider]}/search",
@@ -191,6 +191,91 @@ class ConcertsService:
         return next(self._provider_cycle)
 
     # ----------------------------------------------------------------------
+    # Event filtering
+    # ----------------------------------------------------------------------
+    def filter_events(
+        self, events: List[dict], start_date: Optional[str], end_date: Optional[str]
+    ) -> List[dict]:
+        """Filter events by date range and data quality (must have a name)."""
+        filtered_events = []
+        start_dt = None
+        end_dt = None
+
+        # Parse start and end dates
+        if start_date:
+            try:
+                start_dt = datetime.fromisoformat(start_date.replace("Z", "+00:00"))
+            except ValueError:
+                try:
+                    start_dt = datetime.strptime(start_date, "%Y-%m-%d")
+                except ValueError:
+                    logger.warning(f"Invalid start_date format: {start_date}")
+
+        if end_date:
+            try:
+                end_dt = datetime.fromisoformat(end_date.replace("Z", "+00:00"))
+            except ValueError:
+                try:
+                    end_dt = datetime.strptime(end_date, "%Y-%m-%d")
+                    # Set to end of day
+                    end_dt = end_dt.replace(hour=23, minute=59, second=59)
+                except ValueError:
+                    logger.warning(f"Invalid end_date format: {end_date}")
+
+        events_without_name = 0
+        events_outside_date_range = 0
+
+        for event in events:
+            # Filter out events with no name
+            event_name = event.get("name")
+            if not event_name or (
+                isinstance(event_name, str) and not event_name.strip()
+            ):
+                events_without_name += 1
+                continue
+
+            # Filter by date range if specified
+            if start_dt or end_dt:
+                event_date_str = event.get("startDateTime")
+                if not event_date_str:
+                    # If no date but date filtering is requested, include it
+                    # (provider may not have date info)
+                    filtered_events.append(event)
+                    continue
+
+                try:
+                    # Parse event date
+                    event_dt = datetime.fromisoformat(
+                        event_date_str.replace("Z", "+00:00")
+                    )
+
+                    # Check if event is within range
+                    include_event = True
+                    if start_dt and event_dt < start_dt:
+                        include_event = False
+                        events_outside_date_range += 1
+                    if end_dt and event_dt > end_dt:
+                        include_event = False
+                        events_outside_date_range += 1
+
+                    if include_event:
+                        filtered_events.append(event)
+                except (ValueError, AttributeError):
+                    # If we can't parse the date, include the event
+                    logger.debug(f"Could not parse event date: {event_date_str}")
+                    filtered_events.append(event)
+            else:
+                # No date filtering, just include events with valid names
+                filtered_events.append(event)
+
+        logger.info(
+            f"Filtered events: {len(events)} -> {len(filtered_events)} "
+            f"(removed {events_without_name} without name, "
+            f"{events_outside_date_range} outside date range)"
+        )
+        return filtered_events
+
+    # ----------------------------------------------------------------------
     # Recommendation enrichment
     # ----------------------------------------------------------------------
     def enrich_recommendations(self, recommendations, concert_results):
@@ -227,41 +312,75 @@ class ConcertsService:
         user_preferences = await client.get_user_preferences(user_input=user_input)
         logger.info(f"Extracted user preferences: {user_preferences}")
 
-        locations = tokens.get("locations", [None])
-        if locations and len(locations) > 1:
-            city = ",".join(locations)
-        else:
-            city = locations
-        city = None if city == "unknown" else city
-        logger.info(f"Using city: {city}")
+        # Prioritize explicit location from user input (tokens)
+        # Only fall back to preferences if no location was explicitly mentioned
+        token_locations = tokens.get("locations", [])
+        preference_locations = user_preferences.get("locations", [])
 
-        artists = tokens.get("artists", [None])
+        city = None
+        if token_locations and token_locations != ["unknown"]:
+            # User explicitly mentioned a location in their query
+            if len(token_locations) > 1:
+                city = ",".join(token_locations)
+            else:
+                city = token_locations[0]
+            logger.info(f"Using location from user input: {city}")
+        elif preference_locations and preference_locations != ["unknown"]:
+            # No explicit location in query, use preferences
+            if len(preference_locations) > 1:
+                city = ",".join(preference_locations)
+            else:
+                city = preference_locations[0]
+            logger.info(f"Using location from preferences: {city}")
+        else:
+            logger.info("No location specified, searching all locations")
+
+        artists = tokens.get("artists", [])
         genres = user_preferences.get("genres", [])
         keywords = artists + genres
-        if keywords and len(keywords) > 1:
-            keywords = ",".join(keywords)
+        # Filter out None and "unknown" values
+        keywords = [k for k in keywords if k and k != "unknown"]
+        if keywords:
+            keyword = ",".join(keywords)
         else:
-            keywords = keywords[0]
+            keyword = None
 
         client_params = {
             "city": city,
             "start_date": tokens.get("start_date"),
             "end_date": tokens.get("end_date"),
-            "keyword": keywords,
+            "keyword": keyword,
             "concert_data_provider": None,
         }
 
         concert_results = await self.search(**client_params)
-        logger.info(
-            f"Fetched concert results, \
-                total:{len(concert_results.get('data', []))} events"
-        )
+        events_found = len(concert_results.get("data", []))
+        logger.info(f"Fetched concert results, total: {events_found} events")
+
+        # If no results found, try with a different provider
+        if events_found == 0:
+            logger.info(
+                "No results found with first provider, trying alternate provider"
+            )
+            # Get the next provider in the cycle
+            alternate_provider = self.get_provider()
+            client_params["concert_data_provider"] = alternate_provider
+            concert_results = await self.search(**client_params)
+            events_found = len(concert_results.get("data", []))
+            logger.info(
+                f"Retry with provider '{alternate_provider}' \
+                    returned {events_found} events"
+            )
+
+        # Filter events by date range and data quality
+        events = concert_results.get("data", [])
+        start_date = tokens.get("start_date")
+        end_date = tokens.get("end_date")
+        filtered_events = self.filter_events(events, start_date, end_date)
 
         recommendations = await client.create_recommendations(
             user_preferences=user_preferences,
-            events=concert_results.get("data", []),
+            events=filtered_events,
         )
 
-        return self.enrich_recommendations(
-            recommendations, concert_results.get("data", [])
-        )
+        return self.enrich_recommendations(recommendations, filtered_events)
