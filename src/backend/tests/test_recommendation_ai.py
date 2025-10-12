@@ -77,7 +77,7 @@ async def mock_search(self, **kwargs):
 
 # Tests
 def test_recommendations_success(monkeypatch):
-    """Endpoint returns results+summary when Groq succeeds"""
+    """Endpoint returns recommendations+summary when Groq succeeds"""
     monkeypatch.setattr("app.core.groq_client.httpx.AsyncClient.request", mock_request_success)
     monkeypatch.setattr(ConcertsService, "search", mock_search, raising=True)
 
@@ -85,11 +85,11 @@ def test_recommendations_success(monkeypatch):
     assert resp.status_code == 200
 
     data = resp.json()
-    assert isinstance(data.get("results"), list)
+    assert isinstance(data.get("recommendations"), list)
     assert isinstance(data.get("summary"), str)
-    assert data["results"]
-    assert data["results"][0]["event"]["venue"]["city"] == "Boston"
-    assert "Taylor" in data["results"][0]["event"]["name"]
+    assert data["recommendations"]
+    assert data["recommendations"][0]["event"]["venue"]["city"] == "Boston"
+    assert "Taylor" in data["recommendations"][0]["event"]["name"]
 
 
 def test_recommendations_provider_fail(monkeypatch):
@@ -100,7 +100,7 @@ def test_recommendations_provider_fail(monkeypatch):
     assert resp.status_code == 200
 
     data = resp.json()
-    assert "results" in data and isinstance(data["results"], list)
+    assert "recommendations" in data and isinstance(data["recommendations"], list)
     assert "summary" in data and isinstance(data["summary"], str)
 
 
@@ -112,5 +112,5 @@ def test_recommendations_timeout(monkeypatch):
     assert resp.status_code == 200
 
     data = resp.json()
-    assert "results" in data and isinstance(data["results"], list)
+    assert "recommendations" in data and isinstance(data["recommendations"], list)
     assert "summary" in data and isinstance(data["summary"], str)
