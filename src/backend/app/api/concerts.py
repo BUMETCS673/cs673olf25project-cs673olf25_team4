@@ -4,7 +4,7 @@ This file was generated with the help of AI. 70% of the code was written by AI,
 while the remaining 30% was added/modified by humans.
 """
 
-import os, sys
+import os
 from typing import Optional, List, Dict
 import httpx
 from fastapi import APIRouter, Query, HTTPException
