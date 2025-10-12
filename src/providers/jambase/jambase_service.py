@@ -108,7 +108,13 @@ async def get_city_id(city_str):
 
     async with httpx.AsyncClient(timeout=30) as client:
         response = await client.get(url, params=query_string)
-        return response.json().get("cities")[0].get("identifier")
+        cities = response.json().get("cities", [])
+
+        if not cities:
+            logger.warning(f"No cities found for '{city_str}' in JamBase database")
+            return None
+
+        return cities[0].get("identifier")
 
 
 def get_api_key():
@@ -183,8 +189,14 @@ class JambaseService(ConcertProviderInterface):
         size: int = 50,
     ):
 
+        # Convert comma-separated keywords to space-separated for JamBase
+        processed_keyword = None
+        if keyword and keyword != "unknown":
+            # Replace commas with spaces for JamBase API
+            processed_keyword = keyword.replace(",", " ").strip()
+
         params = {
-            "keyword": None if keyword == "unknown" else keyword,
+            "keyword": processed_keyword,
             "city": None if city == "unknown" else city,
             "startDateTime": (
                 None
