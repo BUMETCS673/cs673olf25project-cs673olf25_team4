@@ -43,6 +43,7 @@ services:
       TM_API_SECRET: ${TM_API_SECRET}
       TM_API_KEY: ${TM_API_KEY}
       GROQ_API_KEY: ${GROQ_API_KEY}
+      GROQ_API_KEY_BACKUP: ${GROQ_API_KEY_BACKUP}
       TM_BASE_URL: https://app.ticketmaster.com/discovery/v2
 
   ticketmaster_provider:
@@ -120,6 +121,7 @@ services:
 
       # API Configuration
       GROQ_API_KEY: ${GROQ_API_KEY}
+      GROQ_API_KEY_BACKUP: ${GROQ_API_KEY_BACKUP}
 
   frontend:
     build:
