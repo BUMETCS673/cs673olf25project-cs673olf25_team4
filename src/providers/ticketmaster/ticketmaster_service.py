@@ -174,6 +174,7 @@ class TicketmasterService(ConcertProviderInterface):
         )
 
     def get_source_name(self) -> str:
+        """Return the source name for this provider."""
         return "ticketmaster"
 
     async def root(self):

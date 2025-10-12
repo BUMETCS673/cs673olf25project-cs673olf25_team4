@@ -369,9 +369,7 @@ class GroqService:
         return self.client
 
     def _get_active_client(self) -> Groq:
-        """
-        Get the currently active client (primary or backup).
-        """
+        """Get the currently active client (primary or backup)."""
         self._ensure_client()  # Ensure clients are initialized
 
         if self.using_backup and self.backup_client:
@@ -380,8 +378,8 @@ class GroqService:
         return self.client
 
     def _switch_to_backup(self) -> bool:
-        """
-        Switch to backup API key if available.
+        """Switch to backup API key if available.
+
         Returns True if backup is available, False otherwise.
         """
         if self.backup_client and not self.using_backup:
