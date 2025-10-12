@@ -43,6 +43,7 @@ services:
       TM_API_SECRET: ${TM_API_SECRET}
       TM_API_KEY: ${TM_API_KEY}
       GROQ_API_KEY: ${GROQ_API_KEY}
+      GROQ_API_KEY_BACKUP: ${GROQ_API_KEY_BACKUP}
       TM_BASE_URL: https://app.ticketmaster.com/discovery/v2
 
     restart: unless-stopped
@@ -136,6 +137,7 @@ services:
       GROQ_PORT: "8003"
       GROQ_ALLOW_BIND_ALL: "true"
       GROQ_API_KEY: ${GROQ_API_KEY}
+      GROQ_API_KEY_BACKUP: ${GROQ_API_KEY_BACKUP}
 
     restart: unless-stopped
     logging:

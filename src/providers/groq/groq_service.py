@@ -11,7 +11,7 @@ from datetime import date
 import uvicorn
 from fastapi import FastAPI, HTTPException, APIRouter, Query
 from pydantic import BaseModel, ValidationError, Field, field_validator
-from groq import Groq
+from groq import Groq, RateLimitError
 from starlette.concurrency import run_in_threadpool
 from typing import List
 
@@ -125,6 +125,8 @@ class GroqService:
         """Initialize Groq service with API routes."""
         self.router = APIRouter()
         self.client: Optional[Groq] = None
+        self.backup_client: Optional[Groq] = None
+        self.using_backup: bool = False
 
         # Routes
         self.router.add_api_route(
@@ -166,10 +168,8 @@ class GroqService:
         Extract tokens (location, dates, artist) from user input about a music event.
         """
         logger.info("Received token split request")
-        client = self._ensure_client()
 
-        chat_completion = await run_in_threadpool(
-            client.chat.completions.create,
+        chat_completion = await self._call_with_fallback(
             messages=[
                 {
                     "role": "system",
@@ -242,10 +242,8 @@ class GroqService:
         self, user_input: str = Query(...)
     ) -> UserPreferencesResponse:
         logger.info("Received user preferences request")
-        client = self._ensure_client()
 
-        chat_completion = await run_in_threadpool(
-            client.chat.completions.create,
+        chat_completion = await self._call_with_fallback(
             messages=[
                 {
                     "role": "system",
@@ -306,11 +304,9 @@ class GroqService:
         compose list of recommended events
         """
         logger.info("Received recommendations request")
-        client = self._ensure_client()
 
         payload_dict = payload.model_dump()
-        chat_completion = await run_in_threadpool(
-            client.chat.completions.create,
+        chat_completion = await self._call_with_fallback(
             messages=[
                 {
                     "role": "system",
@@ -354,6 +350,7 @@ class GroqService:
     def _ensure_client(self) -> Groq:
         """
         Lazily create and return the Groq client using GROQ_API_KEY.
+        Falls back to GROQ_API_KEY_BACKUP if primary key hits rate limit.
         """
         if self.client is None:
             api_key = os.getenv("GROQ_API_KEY")
@@ -363,7 +360,90 @@ class GroqService:
                     status_code=500, detail="GROQ_API_KEY is not configured"
                 )
             self.client = Groq(api_key=api_key)
+            logger.info("Primary Groq client initialized")
+
+        # Initialize backup client if available
+        if self.backup_client is None:
+            backup_key = os.getenv("GROQ_API_KEY_BACKUP")
+            if backup_key:
+                self.backup_client = Groq(api_key=backup_key)
+                logger.info("Backup Groq client initialized")
+
         return self.client
+
+    def _get_active_client(self) -> Groq:
+        """
+        Get the currently active client (primary or backup).
+        """
+        self._ensure_client()  # Ensure clients are initialized
+
+        if self.using_backup and self.backup_client:
+            logger.info("Using backup Groq API key")
+            return self.backup_client
+        return self.client
+
+    def _switch_to_backup(self) -> bool:
+        """
+        Switch to backup API key if available.
+        Returns True if backup is available, False otherwise.
+        """
+        if self.backup_client and not self.using_backup:
+            self.using_backup = True
+            logger.warning("Switching to backup Groq API key due to rate limit")
+            return True
+        logger.error("No backup Groq API key available")
+        return False
+
+    async def _call_with_fallback(
+        self, messages, model, temperature, response_format=None
+    ):
+        """
+        Call Groq API with automatic fallback to backup key on rate limit.
+
+        Args:
+            messages: Chat messages for the API call
+            model: Model name to use
+            temperature: Temperature parameter
+            response_format: Optional response format specification
+
+        Returns:
+            Chat completion response
+
+        Raises:
+            HTTPException: If rate limit hit on all available keys
+        """
+        client = self._get_active_client()
+
+        kwargs = {
+            "messages": messages,
+            "model": model,
+            "temperature": temperature,
+        }
+        if response_format:
+            kwargs["response_format"] = response_format
+
+        try:
+            return await run_in_threadpool(client.chat.completions.create, **kwargs)
+        except RateLimitError as e:
+            logger.warning(f"Rate limit hit: {e}")
+            if self._switch_to_backup():
+                # Retry with backup client
+                client = self._get_active_client()
+                try:
+                    return await run_in_threadpool(
+                        client.chat.completions.create, **kwargs
+                    )
+                except RateLimitError:
+                    logger.error("Rate limit also hit on backup key")
+                    raise HTTPException(
+                        status_code=429,
+                        detail="Rate limit exceeded on all available API keys",
+                    )
+            else:
+                raise HTTPException(
+                    status_code=429,
+                    detail="Rate limit exceeded and no backup API key available",
+                )
 
 
 # ---------- ASGI app factory ----------
