@@ -381,7 +381,7 @@ class ConcertsService:
 
             # Return unified schema (AIResponse-like)
             return {
-                "results": enriched.get("recommendations", []),
+                "recommendations": enriched.get("recommendations", []),
                 "summary": "Recommendations successfully generated.",
             }
 
@@ -389,13 +389,13 @@ class ConcertsService:
         except httpx.TimeoutException:
             logger.exception("Groq timeout")
             return {
-                "results": [],
+                "recommendations": [],
                 "summary": "AI service timeout. Showing fallback.",
             }
 
         except Exception as e:
             logger.exception(f"Groq error: {e}")
             return {
-                "results": [],
+                "recommendations": [],
                 "summary": "AI service error. Showing fallback.",
             }
