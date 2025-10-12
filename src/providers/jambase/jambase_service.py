@@ -108,7 +108,13 @@ async def get_city_id(city_str):
 
     async with httpx.AsyncClient(timeout=30) as client:
         response = await client.get(url, params=query_string)
-        return response.json().get("cities")[0].get("identifier")
+        cities = response.json().get("cities", [])
+        
+        if not cities:
+            logger.warning(f"No cities found for '{city_str}' in JamBase database")
+            return None
+        
+        return cities[0].get("identifier")
 
 
 def get_api_key():
