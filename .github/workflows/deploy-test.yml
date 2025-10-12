@@ -13,6 +13,7 @@ jobs:
       TM_API_SECRET: ${{ secrets.TM_API_SECRET }}
       TM_API_KEY: ${{ secrets.TM_API_KEY }}
       GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
+      GROQ_API_KEY_BACKUP: ${{ secrets.GROQ_API_KEY_BACKUP }}
       STAGING_DOMAIN: testbeatmap.com
     steps:
       - name: Checkout repository
@@ -32,6 +33,7 @@ jobs:
             export TM_API_SECRET=${{ secrets.TM_API_SECRET }}
             export TM_API_KEY=${{ secrets.TM_API_KEY }}
             export GROQ_API_KEY=${{ secrets.GROQ_API_KEY }}
+            export GROQ_API_KEY_BACKUP=${{ secrets.GROQ_API_KEY_BACKUP }}
             export STAGING_DOMAIN=testbeatmap.com
 
             echo "════════════════════════════════════════════════"
@@ -91,6 +93,7 @@ jobs:
             TM_API_SECRET=$TM_API_SECRET
             TM_API_KEY=$TM_API_KEY
             GROQ_API_KEY=$GROQ_API_KEY
+            GROQ_API_KEY_BACKUP=$GROQ_API_KEY_BACKUP
             TM_BASE_URL=https://app.ticketmaster.com/discovery/v2
             EOF
 
