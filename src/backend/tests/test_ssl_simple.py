@@ -7,7 +7,7 @@ import pytest
 import os
 from unittest.mock import patch
 
-from ..app.core.ssl_settings import SSLSettings
+from app.core.ssl_settings import SSLSettings
 
 
 class TestSSLSettingsSimple:

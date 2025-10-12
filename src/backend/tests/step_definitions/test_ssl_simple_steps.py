@@ -8,7 +8,7 @@ import os
 from unittest.mock import patch
 from pytest_bdd import scenarios, given, when, then
 
-from ...app.core.ssl_settings import SSLSettings
+from app.core.ssl_settings import SSLSettings
 
 
 # Load scenarios from the simple feature file
