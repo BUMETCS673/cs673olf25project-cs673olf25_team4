@@ -6,10 +6,15 @@ from app.core.groq_client import GroqClient
 
 
 class FakeAsyncClient(httpx.AsyncClient):
+    """Fake async client for testing."""
+
     def __init__(self, response_json):
+        """Initialize with mock response data."""
         self._response_json = response_json
 
     async def request(self, method: str, url: str, **kwargs):
+        """Return a fake response."""
+
         class FakeResponse:
             def __init__(self, data):
                 self._data = data
@@ -25,6 +30,7 @@ class FakeAsyncClient(httpx.AsyncClient):
 
 @pytest.mark.asyncio
 async def test_extract_tokens_with_test_client():
+    """Test token extraction with a fake client."""
     test_response = {
         "location": "Tampa",
         "start_date": "01012026",
@@ -38,6 +44,7 @@ async def test_extract_tokens_with_test_client():
 
 @pytest.mark.asyncio
 async def test_get_user_preferences_with_test_client():
+    """Test user preferences extraction with a fake client."""
     test_response = {
         "genres": ["rap, rock"],
         "artists": ["Clipse, Radiohead"],
@@ -53,6 +60,7 @@ async def test_get_user_preferences_with_test_client():
 
 @pytest.mark.asyncio
 async def test_create_recommendations_with_test_client():
+    """Test recommendations creation with a fake client."""
     test_response = [
         {"rank": 1, "event_id": "123", "reason": "match"},
         {"rank": 2, "event_id": "456", "reason": "close"},

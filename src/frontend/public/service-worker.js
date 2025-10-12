@@ -3,6 +3,8 @@
  * Provides offline support, caching, and HTTPS security
  */
 
+/* global clients */
+
 const CACHE_NAME = 'beatmap-cache-v1';
 const RUNTIME_CACHE = 'beatmap-runtime-v1';
 

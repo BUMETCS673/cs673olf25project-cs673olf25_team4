@@ -232,6 +232,7 @@ def cors_headers_allow_origin(middleware_context):
 # Alternate phrasing used in feature file
 @then("the Access-Control-Allow-Origin header should be set")
 def access_control_allow_origin_set(middleware_context):
+    """Check if Access-Control-Allow-Origin header is set."""
     return cors_headers_allow_origin(middleware_context)
 
 
