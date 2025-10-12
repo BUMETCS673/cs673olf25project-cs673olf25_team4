@@ -4,7 +4,7 @@ This file was generated with the help of AI. 70% of the code was written by AI,
 while the remaining 30% was added/modified by humans.
 """
 
-import os
+import os, sys
 from typing import Optional, List, Dict
 import httpx
 from fastapi import APIRouter, Query, HTTPException
@@ -12,7 +12,6 @@ from itertools import cycle
 import logging
 from datetime import datetime
 from ..core.groq_client import GroqClient
-
 from interfaces.concert_provider_interface import ConcertProviderInterface
 
 logger = logging.getLogger(__name__)
@@ -27,6 +26,7 @@ class ConcertsService:
     """Service for handling concert search and AI-powered recommendations."""
 
     def __init__(self):
+        """Initialize the ConcertsService with router and provider configuration."""
         self.router = APIRouter(tags=["concerts"])
 
         # --- Register routes (support /concerts and /concerts/) ---
@@ -76,8 +76,8 @@ class ConcertsService:
             None, description="Natural-language user input"
         ),
     ):
-        """
-        Root endpoint delegates to AI recommendations.
+        """Root endpoint delegates to AI recommendations.
+
         Example:
         GET /concerts?user_input=rock+concerts+in+Boston+next+week
         """
@@ -278,109 +278,124 @@ class ConcertsService:
     # ----------------------------------------------------------------------
     # Recommendation enrichment
     # ----------------------------------------------------------------------
-    def enrich_recommendations(self, recommendations, concert_results):
-        """Enrich AI recommendations with full concert event details."""
-        if isinstance(concert_results, list):
-            concert_lookup = {c["id"]: c for c in concert_results}
-        else:
-            concert_lookup = concert_results
+    def enrich_recommendations(self, recommendations, events):
+        concert_lookup = {e["id"]: e for e in events}
 
         enriched = []
-        for rec in recommendations["recommendations"]:
-            event = concert_lookup.get(rec["event_id"])
-            enriched.append(
-                {
-                    "rank": rec["rank"],
-                    "event": event,
-                    "reason": rec["reason"],
-                }
-            )
+        for i, rec in enumerate(recommendations or []):
+            event_id = rec.get("event_id")
+            if not event_id:
+                continue
+
+            event = concert_lookup.get(event_id)
+            if not event:
+                continue
+
+            enriched.append({
+                "event": event,
+                "reason": rec.get("reason", ""),
+                "rank": rec.get("rank", i + 1),
+            })
         return {"recommendations": enriched}
 
     # ----------------------------------------------------------------------
     # AI-powered recommendations
     # ----------------------------------------------------------------------
     async def get_curated_concert_recommendations(self, user_input: str):
-        """Generate AI-curated concert recommendations based on user input."""
+        """Generate AI-curated concert recommendations with robust fallback."""
         logger.info(f"Generating recommendations for user input: {user_input}")
         client = GroqClient()
         logger.info(f"Using Groq provider at {client.base_url}")
 
-        tokens = await client.extract_tokens(user_input=user_input)
-        logger.info(f"Extracted tokens: {tokens}")
+        try:
+            tokens = await client.extract_tokens(user_input=user_input)
+            logger.info(f"Extracted tokens: {tokens}")
+            user_preferences = await client.get_user_preferences(user_input=user_input)
+            logger.info(f"Extracted user preferences: {user_preferences}")
 
-        user_preferences = await client.get_user_preferences(user_input=user_input)
-        logger.info(f"Extracted user preferences: {user_preferences}")
+            token_locations = tokens.get("locations", [])
+            preference_locations = user_preferences.get("locations", [])
 
-        # Prioritize explicit location from user input (tokens)
-        # Only fall back to preferences if no location was explicitly mentioned
-        token_locations = tokens.get("locations", [])
-        preference_locations = user_preferences.get("locations", [])
-
-        city = None
-        if token_locations and token_locations != ["unknown"]:
-            # User explicitly mentioned a location in their query
-            if len(token_locations) > 1:
+            city = None
+            if token_locations and token_locations != ["unknown"]:
                 city = ",".join(token_locations)
-            else:
-                city = token_locations[0]
-            logger.info(f"Using location from user input: {city}")
-        elif preference_locations and preference_locations != ["unknown"]:
-            # No explicit location in query, use preferences
-            if len(preference_locations) > 1:
+                logger.info(f"Using location from user input: {city}")
+            elif preference_locations and preference_locations != ["unknown"]:
                 city = ",".join(preference_locations)
+                logger.info(f"Using location from preferences: {city}")
             else:
-                city = preference_locations[0]
-            logger.info(f"Using location from preferences: {city}")
-        else:
-            logger.info("No location specified, searching all locations")
+                logger.info("No location specified, searching all locations")
 
-        artists = tokens.get("artists", [])
-        genres = user_preferences.get("genres", [])
-        keywords = artists + genres
-        # Filter out None and "unknown" values
-        keywords = [k for k in keywords if k and k != "unknown"]
-        if keywords:
-            keyword = ",".join(keywords)
-        else:
-            keyword = None
+            artists = tokens.get("artists", [])
+            genres = user_preferences.get("genres", [])
+            keywords = [k for k in artists + genres if k and k != "unknown"]
+            keyword = ",".join(keywords) if keywords else None
 
-        client_params = {
-            "city": city,
-            "start_date": tokens.get("start_date"),
-            "end_date": tokens.get("end_date"),
-            "keyword": keyword,
-            "concert_data_provider": None,
-        }
+            client_params = {
+                "city": city,
+                "start_date": tokens.get("start_date"),
+                "end_date": tokens.get("end_date"),
+                "keyword": keyword,
+                "concert_data_provider": None,
+            }
 
-        concert_results = await self.search(**client_params)
-        events_found = len(concert_results.get("data", []))
-        logger.info(f"Fetched concert results, total: {events_found} events")
-
-        # If no results found, try with a different provider
-        if events_found == 0:
-            logger.info(
-                "No results found with first provider, trying alternate provider"
-            )
-            # Get the next provider in the cycle
-            alternate_provider = self.get_provider()
-            client_params["concert_data_provider"] = alternate_provider
+            # Query concerts
             concert_results = await self.search(**client_params)
             events_found = len(concert_results.get("data", []))
-            logger.info(
-                f"Retry with provider '{alternate_provider}' \
-                    returned {events_found} events"
+            logger.info(f"Fetched concert results: {events_found} events")
+
+            # Retry with alternate provider if none found
+            if events_found == 0:
+                alternate_provider = self.get_provider()
+                client_params["concert_data_provider"] = alternate_provider
+                concert_results = await self.search(**client_params)
+                events_found = len(concert_results.get("data", []))
+                logger.info(
+                    f"Retry with provider '{alternate_provider}' "
+                    f"→ {events_found} events"
+                )
+
+            # Filter & generate recommendations
+            events = concert_results.get("data", [])
+            start_date = tokens.get("start_date")
+            end_date = tokens.get("end_date")
+            filtered_events = self.filter_events(events, start_date, end_date)
+
+            # Enrich and return
+            raw_recommendations = await client.create_recommendations(
+                user_preferences=user_preferences,
+                events=filtered_events,
             )
+            if isinstance(raw_recommendations, dict):
+                rec_list = (
+                        raw_recommendations.get("recommendations")
+                        or raw_recommendations.get("results")
+                        or []
+                )
+            elif isinstance(raw_recommendations, list):
+                rec_list = raw_recommendations
+            else:
+                rec_list = []
 
-        # Filter events by date range and data quality
-        events = concert_results.get("data", [])
-        start_date = tokens.get("start_date")
-        end_date = tokens.get("end_date")
-        filtered_events = self.filter_events(events, start_date, end_date)
+            enriched = self.enrich_recommendations(rec_list, filtered_events)
 
-        recommendations = await client.create_recommendations(
-            user_preferences=user_preferences,
-            events=filtered_events,
-        )
+            # Return unified schema (AIResponse-like)
+            return {
+                "results": enriched.get("recommendations", []),
+                "summary": "Recommendations successfully generated.",
+            }
 
-        return self.enrich_recommendations(recommendations, filtered_events)
+        # Fallbacks
+        except httpx.TimeoutException:
+            logger.exception("Groq timeout")
+            return {
+                "results": [],
+                "summary": "AI service timeout. Showing fallback.",
+            }
+
+        except Exception as e:
+            logger.exception(f"Groq error: {e}")
+            return {
+                "results": [],
+                "summary": "AI service error. Showing fallback.",
+            }
