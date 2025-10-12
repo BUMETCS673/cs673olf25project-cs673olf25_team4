@@ -1,22 +1,19 @@
-import ResultCard from './ResultCard';
+import ResultCard from "./ResultCard";
 
-// Results: maps an array of event items into ResultCard components
-// If no items exist, shows a "No results." placeholder
-function Results({ items = [] }) {
-  if (!items.length) {
-    return <div className="empty">No results.</div>;
-  }
-
+function Results({ recommendations = [] }) {
+  console.log("[Results] received:", recommendations);
 
   return (
     <div className="cards">
-      {items.map((it, i) => (
+      {recommendations.map((rec, idx) => (
         <ResultCard
-          key={i}
-          title={it.title}
-          date={it.date}
-          venue={it.venue}
-          city={it.city}
+          key={idx}
+          title={rec.event?.name}
+          date={rec.event?.startDateTime}
+          venue={rec.event?.venue?.name}
+          city={rec.event?.venue?.city}
+          url={rec.event?.url}
+          reason={rec.reason}
         />
       ))}
     </div>
@@ -24,3 +21,5 @@ function Results({ items = [] }) {
 }
 
 export default Results;
+
+
