@@ -12,6 +12,7 @@ services:
       - "8443:8443"   # HTTPS
     volumes:
       - ../ssl/dev:/app/ssl:ro  # Mount development SSL certificates (read-only)
+      - ./interfaces:/app/interfaces:ro
     depends_on:
       - ticketmaster_provider
       - jambase_provider
@@ -56,6 +57,7 @@ services:
       - "8001:8001"   # HTTPS
     volumes:
       - ../ssl/dev:/app/ssl:ro  # Mount development SSL certificates (read-only)
+      - ./interfaces:/app/interfaces:ro
     environment:
       # SSL Configuration
       TM_SSL_ENABLED: "true"
@@ -82,6 +84,7 @@ services:
       - "8002:8002"   # HTTPS
     volumes:
       - ../ssl/dev:/app/ssl:ro  # Mount development SSL certificates (read-only)
+      - ./interfaces:/app/interfaces:ro
     environment:
       # SSL Configuration
       JAMBASE_SSL_ENABLED: "true"
