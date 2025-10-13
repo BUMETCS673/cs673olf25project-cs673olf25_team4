@@ -6,9 +6,11 @@ from app.api.concerts import ConcertsService
 
 client = TestClient(app)
 
+
 # Mock helpers
 class MockResponse:
     """Lightweight mock for httpx responses"""
+
     def __init__(self, json_data=None, status_code=200):
         self._json = json_data or {}
         self.status_code = status_code
@@ -39,11 +41,19 @@ RECO_OK = {
     "summary": "Top pick: Taylor Swift at TD Garden.",
 }
 
+
 # Mocks for GroqClient
 async def mock_request_success(self, method, url, **kwargs):
     """Simulate Groq provider normal responses for all AI sub-endpoints"""
     if url.endswith("/tokens"):
-        return MockResponse({"locations": ["Boston"], "start_date": None, "end_date": None, "artists": []})
+        return MockResponse(
+            {
+                "locations": ["Boston"],
+                "start_date": None,
+                "end_date": None,
+                "artists": [],
+            }
+        )
     if url.endswith("/preferences"):
         return MockResponse({"genres": ["pop"], "locations": ["Boston"]})
     if url.endswith("/recommendations"):
@@ -60,6 +70,7 @@ async def mock_request_timeout(self, method, url, **kwargs):
     """Simulate Groq provider timeout"""
     raise httpx.TimeoutException("groq timeout")
 
+
 # Mock for ConcertsService.search used by enrich_recommendations
 async def mock_search(self, **kwargs):
     """Return a list with an event that matches RECO_OK.event_id"""
@@ -75,13 +86,18 @@ async def mock_search(self, **kwargs):
         ]
     }
 
+
 # Tests
 def test_recommendations_success(monkeypatch):
     """Endpoint returns recommendations+summary when Groq succeeds"""
-    monkeypatch.setattr("app.core.groq_client.httpx.AsyncClient.request", mock_request_success)
+    monkeypatch.setattr(
+        "app.core.groq_client.httpx.AsyncClient.request", mock_request_success
+    )
     monkeypatch.setattr(ConcertsService, "search", mock_search, raising=True)
 
-    resp = client.get("/concerts/recommendations", params={"user_input": "rock in Boston"})
+    resp = client.get(
+        "/concerts/recommendations", params={"user_input": "rock in Boston"}
+    )
     assert resp.status_code == 200
 
     data = resp.json()
@@ -94,7 +110,9 @@ def test_recommendations_success(monkeypatch):
 
 def test_recommendations_provider_fail(monkeypatch):
     """Provider error returns fallback JSON (status 200, stable structure)"""
-    monkeypatch.setattr("app.core.groq_client.httpx.AsyncClient.request", mock_request_fail)
+    monkeypatch.setattr(
+        "app.core.groq_client.httpx.AsyncClient.request", mock_request_fail
+    )
 
     resp = client.get("/concerts/recommendations", params={"user_input": "any"})
     assert resp.status_code == 200
@@ -106,7 +124,9 @@ def test_recommendations_provider_fail(monkeypatch):
 
 def test_recommendations_timeout(monkeypatch):
     """Timeout returns fallback JSON (status 200, stable structure)"""
-    monkeypatch.setattr("app.core.groq_client.httpx.AsyncClient.request", mock_request_timeout)
+    monkeypatch.setattr(
+        "app.core.groq_client.httpx.AsyncClient.request", mock_request_timeout
+    )
 
     resp = client.get("/concerts/recommendations", params={"user_input": "any"})
     assert resp.status_code == 200
