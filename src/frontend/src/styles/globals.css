@@ -15,7 +15,7 @@ body {
   height: 100%;
 }
 
-body {
+/* body {
   margin: 0;
   background: linear-gradient(180deg, #071021 0%, #0a1724 60%);
   color: #e6eef6;
@@ -23,94 +23,21 @@ body {
   align-items: center;
   justify-content: center;
   padding: 0px;
-}
+} */
 
-.container {
-  width: 100%;
-  max-width: 980px;
-  border-radius: 20px;
-  background: linear-gradient(180deg,
-      rgba(255, 255, 255, 0.02),
-      rgba(255, 255, 255, 0.01));
-  box-shadow: 0 8px 30px rgba(2, 6, 23, 0.7);
-  padding: 28px;
-  backdrop-filter: blur(6px);
-  display: grid;
-  grid-template-columns: 420px 1fr;
-  gap: 20px;
-}
-
-.panel {
-  background: linear-gradient(180deg,
-      var(--glass),
-      rgba(255, 255, 255, 0.02));
-  padding: 22px;
-  border-radius: var(--radius);
-  border: 1px solid rgba(255, 255, 255, 0.03);
-}
-
-.brand {
-  display: flex;
-  gap: 12px;
-  align-items: center;
-  margin-bottom: 18px;
-}
-
-.logo {
-  width: 52px;
-  height: 52px;
-  border-radius: 12px;
-  background: linear-gradient(135deg, #ec4899, #06b6d4);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-weight: 800;
-  color: white;
-  box-shadow: 0 6px 18px rgba(236, 72, 153, 0.18);
-}
-
-h1 {
+body {
   margin: 0;
-  font-size: 20px;
-  letter-spacing: -0.2px;
+  min-height: 100vh; /* allow taller content to expand */
+  background: linear-gradient(90deg, #071021 0%, #0a1724 60%);
+  overflow-x: hidden; /* prevent horizontal scroll */
 }
 
-p.lead {
-  margin-top: 8px;
-  color: var(--muted);
-  font-size: 13px;
-}
 
 label {
   display: block;
   font-size: 16px;
   color: var(--muted);
   margin-bottom: 6px;
-}
-
-input,
-select,
-textarea {
-  width: 100%;
-  padding: 10px 12px;
-  background: transparent;
-  border: 1px solid rgba(255, 255, 255, 0.04);
-  border-radius: 10px;
-  color: inherit;
-  outline: none;
-  font-size: 14px;
-}
-
-textarea {
-  resize: vertical;
-  min-height: 70px;
-}
-
-.form-row {
-  font-size: 20px;
-  display: flex;
-  gap: 10px;
-  margin-top: 12px;
 }
 
 .btn {
@@ -161,7 +88,7 @@ textarea {
   background-clip: text
 }
 
-.results {
+/* .results {
   padding: 18px;
   border-radius: var(--radius);
   background: linear-gradient(180deg,
@@ -173,6 +100,29 @@ textarea {
   flex-direction: column;
   gap: 12px;
   align-items: center;
+} */
+
+.results-page {
+  display: flex;
+  flex-direction: column;
+  align-items: center;      /* centers horizontally */
+  justify-content: center;  /* centers vertically */
+  min-height: 100vh;        /* take up full viewport height */
+  margin: 0;                /* remove the manual push */
+  padding: 0 2rem;          /* optional: side padding */
+  box-sizing: border-box;
+  padding-top: 3rem;
+}
+
+.results-content {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  width: 100%;
+  max-width: 1100px; /* bump up from typical 900–980px range */
+  margin: 0 auto;    /* keeps it centered */
+  padding: 0 2rem;   /* adds breathing room at smaller screens */
+  box-sizing: border-box;
 }
 
 .results-panel {
@@ -184,6 +134,10 @@ textarea {
 
 .results-panel h2 {
   margin-bottom: 1.5rem;
+}
+
+.results-context {
+  color: whitesmoke;
 }
 
 .results-actions {
@@ -319,20 +273,18 @@ textarea {
   padding-top: 30px;
 }
 
-.form-section {
-  padding: 30px;
-  ;
-}
-
 .search-page {
-  padding-left: 30px;
-  padding-right: 30px;
-  gap: 2rem;
+  display: flex;
+  flex-direction: column;
+  margin: 5rem;
+  justify-content: center;  /* centers vertically */
+  min-height: 80vh;        /* fill full viewport height */
+  box-sizing: border-box;
 }
 
 .search-wrapper {
   position: relative;
-  width: 100%;
+  width: 50%;
   max-width: 5000px;
   margin: 0 auto;
 }
@@ -348,6 +300,8 @@ textarea {
   font-size: 14px;
   height: 2.5rem;
   box-sizing: border-box;
+  color: rgb(212, 212, 212);
+  font-family: inherit;
 }
 
 .search-content {
