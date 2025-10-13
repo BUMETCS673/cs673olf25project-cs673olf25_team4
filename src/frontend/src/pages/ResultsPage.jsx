@@ -63,7 +63,7 @@ function ResultsPage() {
 
         {!loading && error && (
           <div className="search-error">
-            <p style={{ color: "red" }}>{error}</p>
+            <p style={{ color: "red", fontFamily: "inherit"}}>{error}</p>
             <button
               className="new-search-button"
               onClick={() => (window.location.href = "https://beatmap.live")}
@@ -76,7 +76,7 @@ function ResultsPage() {
 
         {!loading && !error && !recommendations?.length && (
           <div className="search-error">
-            <p>No recommendations found.</p>
+            <p style={{ color: "red", fontFamily: "inherit" }}>No recommendations found.</p>
             <a href="https://beatmap.live"><button className="btn" type="submit">
               New Search
             </button></a>

@@ -4,7 +4,7 @@ import "../styles/globals.css"; // optional, if not already global
 function ResultsPanel({ recommendations, userInput }) {
     return (
         <div className="results-panel">
-            <h2>Concert Recommendations {userInput && (
+            <h2 className= "results-context">Concert Recommendations {userInput && (
                 <span className="results-query">
                     {" "}
                     for “{userInput}”
