@@ -164,9 +164,7 @@ class GroqService:
         return {"status": "ok", "message": "Groq service is running."}
 
     async def tokens(self, user_input: str = Query(...)) -> TokenResponse:
-        """
-        Extract tokens (location, dates, artist) from user input about a music event.
-        """
+        """Extract location, dates, and artist from user input."""
         logger.info("Received token split request")
 
         chat_completion = await self._call_with_fallback(
@@ -231,9 +229,7 @@ class GroqService:
             )
 
     async def summary(self) -> SummaryResponse:
-        """
-        Summarization endpoint (stub).
-        """
+        """Summarization endpoint (stub)."""
         # client = self._ensure_client()
         # TODO: Implement summarization
         raise HTTPException(status_code=501, detail="Not implemented yet")
@@ -241,6 +237,7 @@ class GroqService:
     async def preferences(
         self, user_input: str = Query(...)
     ) -> UserPreferencesResponse:
+        """Extract user music preferences from input."""
         logger.info("Received user preferences request")
 
         chat_completion = await self._call_with_fallback(
@@ -299,9 +296,9 @@ class GroqService:
     async def recommendations(
         self, payload: RecommendationsRequest
     ) -> RecommendationsResponse:
-        """
-        Receive userpreferences and events encapsulated in payload,
-        compose list of recommended events
+        """Receive user preferences and events encapsulated in payload.
+
+        Compose list of recommended events.
         """
         logger.info("Received recommendations request")
 
@@ -348,8 +345,8 @@ class GroqService:
             return RecommendationsResponse(recommendations=[])
 
     def _ensure_client(self) -> Groq:
-        """
-        Lazily create and return the Groq client using GROQ_API_KEY.
+        """Lazily create and return the Groq client using GROQ_API_KEY.
+
         Falls back to GROQ_API_KEY_BACKUP if primary key hits rate limit.
         """
         if self.client is None:
@@ -372,9 +369,7 @@ class GroqService:
         return self.client
 
     def _get_active_client(self) -> Groq:
-        """
-        Get the currently active client (primary or backup).
-        """
+        """Get the currently active client (primary or backup)."""
         self._ensure_client()  # Ensure clients are initialized
 
         if self.using_backup and self.backup_client:
@@ -383,8 +378,8 @@ class GroqService:
         return self.client
 
     def _switch_to_backup(self) -> bool:
-        """
-        Switch to backup API key if available.
+        """Switch to backup API key if available.
+
         Returns True if backup is available, False otherwise.
         """
         if self.backup_client and not self.using_backup:

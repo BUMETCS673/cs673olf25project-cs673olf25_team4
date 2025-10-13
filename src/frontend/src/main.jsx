@@ -22,7 +22,7 @@ serviceWorkerRegistration.register({
       registration.waiting.postMessage({ type: 'SKIP_WAITING' })
     }
   },
-  onSuccess: (registration) => {
+  onSuccess: () => {
     console.log('[SW] Service worker registered successfully')
   }
 })

@@ -39,6 +39,7 @@ class HTTPSRedirectMiddleware(BaseHTTPMiddleware):
     """
 
     def __init__(self, app: ASGIApp, ssl_settings: SSLSettings):
+        """Initialize HTTPS redirect middleware with SSL settings."""
         super().__init__(app)
         self.ssl_settings = ssl_settings
 
@@ -83,10 +84,12 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
     """Middleware to add standard security headers to responses."""
 
     def __init__(self, app: ASGIApp, ssl_settings: SSLSettings):
+        """Initialize security headers middleware with SSL settings."""
         super().__init__(app)
         self.ssl_settings = ssl_settings
 
     async def dispatch(self, request: Request, call_next: Callable) -> Response:
+        """Add security headers to the response."""
         response = await call_next(request)
 
         # --- HTTPS Strict Transport Security (HSTS) ---
@@ -147,10 +150,12 @@ class RequestLoggingMiddleware(BaseHTTPMiddleware):
     """Middleware to log requests for security monitoring."""
 
     def __init__(self, app: ASGIApp, ssl_settings: SSLSettings):
+        """Initialize request logging middleware with SSL settings."""
         super().__init__(app)
         self.ssl_settings = ssl_settings
 
     async def dispatch(self, request: Request, call_next: Callable) -> Response:
+        """Log request and response details for monitoring."""
         client_ip = self._get_client_ip(request)
         user_agent = request.headers.get("user-agent", "Unknown")
         proto = request.headers.get("x-forwarded-proto") or request.url.scheme
@@ -204,6 +209,7 @@ class RateLimitingMiddleware(BaseHTTPMiddleware):
         ssl_settings: SSLSettings,
         requests_per_minute: int = 100,
     ):
+        """Initialize rate limiting middleware with configurable limits."""
         super().__init__(app)
         self.ssl_settings = ssl_settings
         self.requests_per_minute = requests_per_minute
@@ -211,6 +217,7 @@ class RateLimitingMiddleware(BaseHTTPMiddleware):
         self.last_cleanup = 0
 
     async def dispatch(self, request: Request, call_next: Callable) -> Response:
+        """Enforce rate limiting based on client IP."""
         if request.url.path in ["/health", "/metrics"]:
             return await call_next(request)
 

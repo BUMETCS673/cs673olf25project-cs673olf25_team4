@@ -1,12 +1,15 @@
-import { defineConfig } from 'vite'
+import { defineConfig, loadEnv } from 'vite'
 import react from '@vitejs/plugin-react'
 import fs from 'fs'
-import path from 'path'
 
 // https://vite.dev/config/
 export default defineConfig(({ mode }) => {
-  const certPath = path.resolve('../../ssl/dev/server.crt')
-  const keyPath = path.resolve('../../ssl/dev/server.key')
+  // Load env file based on `mode` in the current working directory.
+  // eslint-disable-next-line no-undef
+  const env = loadEnv(mode, process.cwd(), '')
+
+  const certPath = '../../ssl/dev/server.crt'
+  const keyPath = '../../ssl/dev/server.key'
 
   let httpsConfig = {} // always defined
 
@@ -41,22 +44,22 @@ export default defineConfig(({ mode }) => {
       ...httpsConfig, // safe to spread even if empty
       proxy: {
         '/api': {
-          target: process.env.VITE_API_URL || 'http://localhost:8443',
+          target: env.VITE_API_URL || 'http://localhost:8443',
           changeOrigin: true,
           secure: false,
         },
         '/concerts': {
-          target: process.env.VITE_API_URL || 'http://localhost:8443',
+          target: env.VITE_API_URL || 'http://localhost:8443',
           changeOrigin: true,
           secure: false,
         },
         '/nl-concerts': {
-          target: process.env.VITE_API_URL || 'http://localhost:8443',
+          target: env.VITE_API_URL || 'http://localhost:8443',
           changeOrigin: true,
           secure: false,
         },
         '/health': {
-          target: process.env.VITE_API_URL || 'http://localhost:8443',
+          target: env.VITE_API_URL || 'http://localhost:8443',
           changeOrigin: true,
           secure: false,
         },
