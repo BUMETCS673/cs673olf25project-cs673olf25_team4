@@ -1,7 +1,7 @@
 """Concert search and AI-powered recommendation endpoints.
 
-This file was generated with the help of AI. 70% of the code was written by AI,
-while the remaining 30% was added/modified by humans.
+This file was generated with the help of AI. 70% of the code was written
+ by AI, while the remaining 30% was added/modified by humans.
 """
 
 import os
@@ -291,11 +291,13 @@ class ConcertsService:
             if not event:
                 continue
 
-            enriched.append({
-                "event": event,
-                "reason": rec.get("reason", ""),
-                "rank": rec.get("rank", i + 1),
-            })
+            enriched.append(
+                {
+                    "event": event,
+                    "reason": rec.get("reason", ""),
+                    "rank": rec.get("rank", i + 1),
+                }
+            )
         return {"recommendations": enriched}
 
     # ----------------------------------------------------------------------
@@ -368,9 +370,9 @@ class ConcertsService:
             )
             if isinstance(raw_recommendations, dict):
                 rec_list = (
-                        raw_recommendations.get("recommendations")
-                        or raw_recommendations.get("results")
-                        or []
+                    raw_recommendations.get("recommendations")
+                    or raw_recommendations.get("results")
+                    or []
                 )
             elif isinstance(raw_recommendations, list):
                 rec_list = raw_recommendations
