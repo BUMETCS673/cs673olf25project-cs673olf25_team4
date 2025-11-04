@@ -1,0 +1,38 @@
+name: Build
+
+on:
+  push:
+    branches:
+      - main   # Only trigger on pushes to test
+
+jobs:
+  lint-and-test:
+    runs-on: ubuntu-latest
+    container:
+      image: python:3.11-alpine3.21
+    defaults:
+      run:
+        working-directory: src/backend
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Install dependencies
+      run: |
+        apk add --no-cache build-base
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+
+        pip install flake8 pytest black
+
+    - name: Auto-format with black
+      run: |
+        black ../backend ../providers --line-length 88
+
+
+    - name: Run linter
+      run: flake8 ../backend ../providers
+
+    - name: Run tests
+      run: pytest tests --maxfail=1 --disable-warnings -q

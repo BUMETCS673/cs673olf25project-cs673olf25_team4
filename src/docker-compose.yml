@@ -1,0 +1,102 @@
+# Docker Compose Configuration - HTTP Only (Basic Testing)
+# For HTTPS support, use:
+#   - docker-compose.dev.yml (development with self-signed certificates)
+#   - docker-compose.prod.yml (production with Let's Encrypt certificates)
+
+services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: concert_backend
+    command: >
+      uvicorn app.main:app --host 0.0.0.0 --port 8000
+    ports:
+      - "8000:8000"
+    depends_on:
+      - ticketmaster_provider
+      - jambase_provider
+      - groq_provider
+    environment:
+      JAMBASE_API_URL: http://jambase_provider:8002
+      JAMBASE_API_KEY: ${JAMBASE_API_KEY}
+      TM_API_SECRET: ${TM_API_SECRET}
+      TM_API_KEY: ${TM_API_KEY}
+      GROQ_API_KEY: ${GROQ_API_KEY}
+      TM_BASE_URL: https://app.ticketmaster.com/discovery/v2
+      TM_PROVIDER_URL: http://ticketmaster_provider:8001
+      TICKETMASTER_API_URL: http://ticketmaster_provider:8001
+      GROQ_API_URL: http://groq_provider:8003
+
+  ticketmaster_provider:
+    build:
+      context: .
+      dockerfile: providers/ticketmaster/Dockerfile
+    container_name: ticketmaster_provider
+    command: >
+      uvicorn ticketmaster_service:app --host 0.0.0.0 --port 8001
+    ports:
+      - "8001:8001"
+    environment:
+      TM_API_KEY: ${TM_API_KEY}
+      TM_API_SECRET: ${TM_API_SECRET}
+      TM_BASE_URL: https://app.ticketmaster.com/discovery/v2
+      TM_HOST: "0.0.0.0"
+      TM_PORT: "8001"
+      TM_ALLOW_BIND_ALL: "true"
+
+  jambase_provider:
+    build:
+      context: .
+      dockerfile: providers/jambase/Dockerfile
+    container_name: jambase_provider
+    command: >
+      uvicorn jambase_service:app --host 0.0.0.0 --port 8002
+    ports:
+      - "8002:8002"
+    environment:
+      JAMBASE_API_KEY: ${JAMBASE_API_KEY}
+      JAMBASE_HOST: "0.0.0.0"
+      JAMBASE_PORT: "8002"
+      JAMBASE_ALLOW_BIND_ALL: "true"
+
+  groq_provider:
+    build:
+      context: .
+      dockerfile: providers/groq/Dockerfile
+    container_name: groq_provider
+    command: >
+      uvicorn groq_service:app --host 0.0.0.0 --port 8003
+    ports:
+      - "8003:8003"
+    environment:
+      GROQ_API_KEY: ${GROQ_API_KEY}
+      GROQ_HOST: "0.0.0.0"
+      GROQ_PORT: "8003"
+      GROQ_ALLOW_BIND_ALL: "true"
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: beatmap_frontend
+    ports:
+      - "3000:80"
+    depends_on:
+      - backend
+    environment:
+      VITE_API_URL: http://backend:8000
+
+  tests:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: ssl_tests
+    working_dir: /app
+    volumes:
+      - ./backend:/app
+    command: ["bash", "/app/run_tests.sh", "all"]
+    depends_on:
+      - ticketmaster_provider
+      - jambase_provider
+      - groq_provider

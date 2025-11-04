@@ -1,0 +1,184 @@
+name: Deploy to EC2 - PRODUCTION (HTTPS)
+
+on:
+  workflow_run:
+    workflows: ["Build"]
+    types:
+      - completed
+  workflow_dispatch:  # Allows manual triggering from GitHub UI
+
+jobs:
+  deploy:
+    if: >
+      ${{
+        github.event_name == 'workflow_dispatch' ||
+        (github.event.workflow_run.conclusion == 'success' &&
+         github.event.workflow_run.head_branch == 'main')
+      }}
+    runs-on: ubuntu-latest
+    env:
+      JAMBASE_API_KEY: ${{ secrets.JAMBASE_API_KEY }}
+      TM_API_SECRET: ${{ secrets.TM_API_SECRET }}
+      TM_API_KEY: ${{ secrets.TM_API_KEY }}
+      GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
+      GROQ_API_KEY_BACKUP: ${{ secrets.GROQ_API_KEY_BACKUP }}
+      PRODUCTION_DOMAIN: beatmap.live
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+          ref: main   # Always checkout main
+
+      - name: Deploy via SSH using deploy key
+        uses: appleboy/ssh-action@v0.1.7
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ec2-user
+          key: ${{ secrets.EC2_DEPLOY_KEY }}
+          script: |
+            export JAMBASE_API_KEY=${{ secrets.JAMBASE_API_KEY }}
+            export TM_API_SECRET=${{ secrets.TM_API_SECRET }}
+            export TM_API_KEY=${{ secrets.TM_API_KEY }}
+            export GROQ_API_KEY=${{ secrets.GROQ_API_KEY }}
+            export GROQ_API_KEY_BACKUP=${{ secrets.GROQ_API_KEY_BACKUP }}
+            export PRODUCTION_DOMAIN=beatmap.live
+
+            echo "════════════════════════════════════════════════"
+            echo "  ⚠️  PRODUCTION DEPLOYMENT WITH HTTPS"
+            echo "  Domain: beatmap.live"
+            echo "════════════════════════════════════════════════"
+
+            # Ensure required packages are installed
+            echo "▶ Checking prerequisites..."
+            if ! command -v git &> /dev/null; then
+              echo "Installing Git..."
+              sudo yum update -y
+              sudo yum install -y git
+            fi
+
+            if ! command -v certbot &> /dev/null; then
+              echo "Installing Certbot..."
+              sudo yum install -y certbot python3-certbot-nginx
+            fi
+
+            echo "▶ Changing to home directory..."
+            cd /home/ec2-user
+
+            # Create backup before deployment
+            echo "▶ Creating backup..."
+            BACKUP_DIR="/home/ec2-user/backups/prod_$(date +%Y%m%d_%H%M%S)"
+            mkdir -p "$BACKUP_DIR"
+
+            if [ -d "cs673olf25project-cs673olf25_team4" ]; then
+              echo "Backing up current deployment..."
+              sudo docker-compose -f cs673olf25project-cs673olf25_team4/src/docker-compose.prod.yml config > "$BACKUP_DIR/docker-compose.backup.yml" 2>/dev/null || true
+            fi
+
+            echo "▶ Stopping existing containers..."
+            if [ "$(docker ps -q)" ]; then
+              sudo docker-compose -f cs673olf25project-cs673olf25_team4/src/docker-compose.prod.yml down --timeout 30 || true
+            fi
+
+            echo "▶ Removing old repository..."
+            if [ -d "cs673olf25project-cs673olf25_team4" ]; then
+              rm -rf cs673olf25project-cs673olf25_team4
+            fi
+
+            echo "▶ Cloning repository (main branch)..."
+            git clone --branch main git@github.com:BUMETCS673/cs673olf25project-cs673olf25_team4.git
+
+            cd cs673olf25project-cs673olf25_team4 || exit 1
+
+            # Check and generate SSL certificates if needed
+            echo "▶ Checking SSL certificates for beatmap.live..."
+            if [ ! -f "/etc/letsencrypt/live/beatmap.live/fullchain.pem" ]; then
+              echo "SSL certificates not found. Generating..."
+
+              echo "▶ Freeing port 80 for certbot..."
+              sudo fuser -k 80/tcp || true
+              sudo docker stop $(sudo docker ps -q --filter "publish=80") || true
+
+              echo "▶ Running SSL setup..."
+              sudo NON_INTERACTIVE=true bash ssl/setup-production-ssl.sh || {
+                echo "❌ SSL setup failed. Deployment aborted."
+                echo "Rolling back..."
+                if [ -f "$BACKUP_DIR/docker-compose.backup.yml" ]; then
+                  sudo docker-compose -f "$BACKUP_DIR/docker-compose.backup.yml" up -d
+                fi
+                exit 1
+              }
+            else
+              echo "✓ SSL certificates found"
+
+              # Check certificate expiration
+              EXPIRY_DATE=$(sudo openssl x509 -enddate -noout -in /etc/letsencrypt/live/beatmap.live/fullchain.pem | cut -d= -f2)
+              EXPIRY_EPOCH=$(date -d "$EXPIRY_DATE" "+%s")
+              CURRENT_EPOCH=$(date "+%s")
+              DAYS_UNTIL_EXPIRY=$(( ($EXPIRY_EPOCH - $CURRENT_EPOCH) / 86400 ))
+
+              echo "Certificate expires in $DAYS_UNTIL_EXPIRY days"
+
+              if [ $DAYS_UNTIL_EXPIRY -lt 7 ]; then
+                echo "Certificate expiring soon. Renewing..."
+                sudo certbot renew --force-renewal || true
+              fi
+            fi
+
+            # Create .env file
+            echo "▶ Creating environment file..."
+            cat > src/.env << EOF
+            JAMBASE_API_KEY=$JAMBASE_API_KEY
+            TM_API_SECRET=$TM_API_SECRET
+            TM_API_KEY=$TM_API_KEY
+            GROQ_API_KEY=$GROQ_API_KEY
+            GROQ_API_KEY_BACKUP=$GROQ_API_KEY_BACKUP
+            TM_BASE_URL=https://app.ticketmaster.com/discovery/v2
+            EOF
+
+            # Deploy with HTTPS support
+            echo "▶ Building Docker images..."
+            cd src || exit 1
+            sudo -E docker-compose -f docker-compose.prod.yml build --no-cache
+
+            echo "▶ Starting containers with HTTPS..."
+            sudo -E docker-compose -f docker-compose.prod.yml up -d
+
+            echo "▶ Waiting for services to start..."
+            sleep 45
+
+            # Health checks
+            echo "▶ Performing health checks..."
+            HEALTH_FAILED=false
+
+            # Check backend
+            if curl -f --max-time 10 https://beatmap.live:8443/health 2>/dev/null; then
+              echo "✓ Backend service is healthy"
+            else
+              echo "⚠️  Backend health check failed"
+              HEALTH_FAILED=true
+            fi
+
+            # Check frontend
+            if curl -f --max-time 10 https://beatmap.live 2>/dev/null; then
+              echo "✓ Frontend service is healthy"
+            else
+              echo "⚠️  Frontend health check failed"
+              HEALTH_FAILED=true
+            fi
+
+            if [ "$HEALTH_FAILED" = true ]; then
+              echo ""
+              echo "⚠️  Some health checks failed. Check logs:"
+              echo "sudo docker-compose -f /home/ec2-user/cs673olf25project-cs673olf25_team4/src/docker-compose.prod.yml logs"
+              echo ""
+              echo "Backup available at: $BACKUP_DIR"
+            fi
+
+            echo ""
+            echo "════════════════════════════════════════════════"
+            echo "  ✓ Production Deployment Complete"
+            echo "  Access: https://beatmap.live"
+            echo "  Backup: $BACKUP_DIR"
+            echo "════════════════════════════════════════════════"

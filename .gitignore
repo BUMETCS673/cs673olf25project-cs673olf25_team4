@@ -1,0 +1,115 @@
+iteration0_team4.zip
+iteration1.mp4
+
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# C extensions
+*.so
+
+# Distribution / packaging
+.Python
+env/
+venv/
+ENV/
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# PyInstaller
+#  Usually these files are written by a python script from a template
+#  before PyInstaller builds the exe, so as to inject date/other infos into it.
+*.manifest
+*.spec
+
+# Installer logs
+pip-log.txt
+pip-delete-this-directory.txt
+
+# Unit test / coverage reports
+.tox/
+.nox/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+*.py,cover
+.hypothesis/
+.pytest_cache/
+
+# mypy
+.mypy_cache/
+
+# Pyre type checker
+.pyre/
+
+# Pytype
+.pytype/
+
+# virtualenv
+venv/
+ENV/
+env/
+env.bak/
+venv.bak/
+
+# VS Code
+.vscode/
+
+# macOS
+.DS_Store
+
+# Environment variables
+.env
+
+# files with secrets
+.env
+
+# PyCharm files
+.idea/
+
+# SSL Certificates and Private Keys (NEVER commit these)
+ssl/dev/*.crt
+ssl/dev/*.key
+ssl/dev/*.pem
+ssl/testbeatmap/*.crt
+ssl/testbeatmap/*.key
+ssl/testbeatmap/*.pem
+ssl/production/*.crt
+ssl/production/*.key
+ssl/production/*.pem
+
+# SSL Certificate backups
+ssl/backups/
+ssl/dev/dev.backup/
+/etc/ssl/backups/
+
+# SSL test artifacts and temporary files
+ssl/tests/temp/
+
+# Environment files with SSL configuration
+.env.ssl
+*.env
+
+# Local testing and build logs
+bandit_log.txt
+black_log.txt
+flake8_log.txt
+pytests_log.txt
+run-local-build-all.sh
+run-local-security-check.sh

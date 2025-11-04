@@ -1,0 +1,174 @@
+# ================================
+# Docker Compose - Production
+# HTTPS via Let's Encrypt
+# ================================
+
+services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: concert_backend_prod
+    ports:
+      - "8443:8443"   # HTTPS only
+    volumes:
+      - /etc/letsencrypt/live/beatmap.live:/app/ssl:ro
+      - /etc/letsencrypt/archive/beatmap.live:/archive/beatmap.live:ro
+      - ./interfaces:/app/interfaces:ro
+    depends_on:
+      - ticketmaster_provider
+      - jambase_provider
+      - groq_provider
+    environment:
+      ENVIRONMENT: production
+      BEATMAP_HOST: "0.0.0.0"
+      BEATMAP_PORT: "8000"
+
+      # SSL Configuration
+      SSL_ENABLED: "true"
+      SSL_CERT_PATH: /app/ssl/fullchain.pem
+      SSL_KEY_PATH: /app/ssl/privkey.pem
+      SSL_PORT: "8443"
+      FORCE_HTTPS: "true"
+      HSTS_ENABLED: "true"
+      HSTS_PRELOAD: "true"
+
+      # Provider URLs (internal HTTPS)
+      JAMBASE_API_URL: https://jambase_provider:8002
+      TICKETMASTER_API_URL: https://ticketmaster_provider:8001
+      GROQ_API_URL: https://groq_provider:8003
+
+      # API Keys
+      JAMBASE_API_KEY: ${JAMBASE_API_KEY}
+      TM_API_SECRET: ${TM_API_SECRET}
+      TM_API_KEY: ${TM_API_KEY}
+      GROQ_API_KEY: ${GROQ_API_KEY}
+      GROQ_API_KEY_BACKUP: ${GROQ_API_KEY_BACKUP}
+      TM_BASE_URL: https://app.ticketmaster.com/discovery/v2
+
+    restart: unless-stopped
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  ticketmaster_provider:
+    build:
+      context: .
+      dockerfile: providers/ticketmaster/Dockerfile
+    container_name: ticketmaster_provider_prod
+    command: >
+      python -c "import sys; sys.path.insert(0, '/app');
+      from ticketmaster_service import main; main()"
+    ports:
+      - "8001:8001"
+    volumes:
+      - /etc/letsencrypt/live/beatmap.live:/app/ssl:ro
+      - /etc/letsencrypt/archive/beatmap.live:/archive/beatmap.live:ro
+      - ./interfaces:/app/interfaces:ro
+    environment:
+      TM_SSL_ENABLED: "true"
+      TM_SSL_CERT_PATH: /app/ssl/fullchain.pem
+      TM_SSL_KEY_PATH: /app/ssl/privkey.pem
+      TM_HOST: "0.0.0.0"
+      TM_PORT: "8001"
+      TM_ALLOW_BIND_ALL: "true"
+
+      TM_API_KEY: ${TM_API_KEY}
+      TM_API_SECRET: ${TM_API_SECRET}
+      TM_BASE_URL: https://app.ticketmaster.com/discovery/v2
+
+    restart: unless-stopped
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  jambase_provider:
+    build:
+      context: .
+      dockerfile: providers/jambase/Dockerfile
+    container_name: jambase_provider_prod
+    command: >
+      python -c "import sys; sys.path.insert(0, '/app');
+      from jambase_service import main; main()"
+    ports:
+      - "8002:8002"
+    volumes:
+      - /etc/letsencrypt/live/beatmap.live:/app/ssl:ro
+      - /etc/letsencrypt/archive/beatmap.live:/archive/beatmap.live:ro
+      - ./interfaces:/app/interfaces:ro
+    environment:
+      JAMBASE_SSL_ENABLED: "true"
+      JAMBASE_SSL_CERT_PATH: /app/ssl/fullchain.pem
+      JAMBASE_SSL_KEY_PATH: /app/ssl/privkey.pem
+      JAMBASE_HOST: "0.0.0.0"
+      JAMBASE_PORT: "8002"
+      JAMBASE_ALLOW_BIND_ALL: "true"
+      JAMBASE_API_KEY: ${JAMBASE_API_KEY}
+
+    restart: unless-stopped
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  groq_provider:
+    build:
+      context: .
+      dockerfile: providers/groq/Dockerfile
+    container_name: groq_provider_prod
+    command: >
+      python -c "import sys; sys.path.insert(0, '/app');
+      from groq_service import main; main()"
+    ports:
+      - "8003:8003"
+    volumes:
+      - /etc/letsencrypt/live/beatmap.live:/app/ssl:ro
+      - /etc/letsencrypt/archive/beatmap.live:/archive/beatmap.live:ro
+    environment:
+      GROQ_SSL_ENABLED: "true"
+      GROQ_SSL_CERT_PATH: /app/ssl/fullchain.pem
+      GROQ_SSL_KEY_PATH: /app/ssl/privkey.pem
+      GROQ_HOST: "0.0.0.0"
+      GROQ_PORT: "8003"
+      GROQ_ALLOW_BIND_ALL: "true"
+      GROQ_API_KEY: ${GROQ_API_KEY}
+      GROQ_API_KEY_BACKUP: ${GROQ_API_KEY_BACKUP}
+
+    restart: unless-stopped
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        NODE_ENV: production
+    container_name: beatmap_frontend_prod
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - /etc/letsencrypt/live/beatmap.live/fullchain.pem:/etc/nginx/ssl/server.crt:ro
+      - /etc/letsencrypt/live/beatmap.live/privkey.pem:/etc/nginx/ssl/server.key:ro
+    depends_on:
+      - backend
+    environment:
+      VITE_API_URL: https://beatmap.live
+      VITE_ENABLE_HTTPS: "true"
+      VITE_STRICT_SSL: "true"
+
+    restart: unless-stopped
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"

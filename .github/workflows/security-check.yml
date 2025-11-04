@@ -1,0 +1,86 @@
+name: Security Checks
+
+on:
+  push:
+  pull_request:
+
+# ------------------------------------------------------
+# Rollout Plan for Security Checks:
+#
+# Phase 1: Run security tools (Bandit, pip-audit, Safety)
+#          with `continue-on-error: true` so findings
+#          are visible but do NOT block PR merges.
+#
+# Phase 2: Fix or suppress issues (e.g. # nosec for
+#          false positives, update dependencies).
+#
+# Phase 3: Remove `continue-on-error: true` so that
+#          security findings become merge-blocking
+#          just like failing tests.
+#
+# ------------------------------------------------------
+
+jobs:
+  backend-security:
+    runs-on: ubuntu-latest
+    #continue-on-error: true  # TEMPORARY: remove in Phase 3
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install security tools
+        run: |
+          python -m pip install --upgrade pip
+          pip install bandit safety pip-audit
+
+      - name: Run Bandit (static analysis)
+        run: bandit -c bandit.yaml -r src/backend src/providers
+
+      - name: Run pip-audit (dependency scan - backend)
+        run: |
+          echo "Scanning backend dependencies..."
+          pip-audit --requirement src/backend/requirements.txt
+
+      - name: Run pip-audit (dependency scan - jambase provider)
+        run: |
+          echo "Scanning jambase provider dependencies..."
+          pip-audit --requirement src/providers/jambase/requirements.txt
+
+      - name: Run pip-audit (dependency scan - ticketmaster provider)
+        run: |
+          echo "Scanning ticketmaster provider dependencies..."
+          pip-audit --requirement src/providers/ticketmaster/requirements.txt
+
+      - name: Run pip-audit (dependency scan - groq provider)
+        run: |
+          echo "Scanning groq provider dependencies..."
+          pip-audit --requirement src/providers/groq/requirements.txt
+
+  frontend-security:
+    runs-on: ubuntu-latest
+    #continue-on-error: true  # TEMPORARY: remove in Phase 3
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Install frontend dependencies
+        working-directory: src/frontend
+        run: npm ci
+
+      - name: Run npm audit
+        working-directory: src/frontend
+        run: npm audit --audit-level=moderate
+
+      - name: Run ESLint security checks
+        working-directory: src/frontend
+        run: npm run lint

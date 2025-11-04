@@ -1,0 +1,144 @@
+# Docker Compose Configuration for Development Environment
+# Uses self-signed certificates for HTTPS
+
+services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: concert_backend_dev
+    ports:
+      - "8000:8000"   # HTTP fallback
+      - "8443:8443"   # HTTPS
+    volumes:
+      - ../ssl/dev:/app/ssl:ro  # Mount development SSL certificates (read-only)
+      - ./interfaces:/app/interfaces:ro
+    depends_on:
+      - ticketmaster_provider
+      - jambase_provider
+      - groq_provider
+    environment:
+      # Environment
+      ENVIRONMENT: development
+
+      # Server Configuration
+      BEATMAP_HOST: "0.0.0.0"  # Listen on all interfaces for Docker
+      BEATMAP_PORT: "8000"
+
+      # SSL Configuration
+      SSL_ENABLED: "true"
+      SSL_CERT_PATH: /app/ssl/server.crt
+      SSL_KEY_PATH: /app/ssl/server.key
+      SSL_PORT: "8443"
+      FORCE_HTTPS: "false"  # Allow HTTP for development
+      HSTS_ENABLED: "false"  # Disable HSTS in development
+
+      # Provider URLs (HTTPS)
+      JAMBASE_API_URL: https://jambase_provider:8002
+      TICKETMASTER_API_URL: https://ticketmaster_provider:8001
+      GROQ_API_URL: https://groq_provider:8003
+
+      # API Keys (from .env file)
+      JAMBASE_API_KEY: ${JAMBASE_API_KEY}
+      TM_API_SECRET: ${TM_API_SECRET}
+      TM_API_KEY: ${TM_API_KEY}
+      GROQ_API_KEY: ${GROQ_API_KEY}
+      TM_BASE_URL: https://app.ticketmaster.com/discovery/v2
+
+  ticketmaster_provider:
+    build:
+      context: .
+      dockerfile: providers/ticketmaster/Dockerfile
+    container_name: ticketmaster_provider_dev
+    command: >
+      python -c "import sys; sys.path.insert(0, '/app');
+      from ticketmaster_service import main; main()"
+    ports:
+      - "8001:8001"   # HTTPS
+    volumes:
+      - ../ssl/dev:/app/ssl:ro  # Mount development SSL certificates (read-only)
+      - ./interfaces:/app/interfaces:ro
+    environment:
+      # SSL Configuration
+      TM_SSL_ENABLED: "true"
+      TM_SSL_CERT_PATH: /app/ssl/server.crt
+      TM_SSL_KEY_PATH: /app/ssl/server.key
+      TM_HOST: "0.0.0.0"
+      TM_PORT: "8001"
+      TM_ALLOW_BIND_ALL: "true"
+
+      # API Configuration
+      TM_API_KEY: ${TM_API_KEY}
+      TM_API_SECRET: ${TM_API_SECRET}
+      TM_BASE_URL: https://app.ticketmaster.com/discovery/v2
+
+  jambase_provider:
+    build:
+      context: .
+      dockerfile: providers/jambase/Dockerfile
+    container_name: jambase_provider_dev
+    command: >
+      python -c "import sys; sys.path.insert(0, '/app');
+      from jambase_service import main; main()"
+    ports:
+      - "8002:8002"   # HTTPS
+    volumes:
+      - ../ssl/dev:/app/ssl:ro  # Mount development SSL certificates (read-only)
+      - ./interfaces:/app/interfaces:ro
+    environment:
+      # SSL Configuration
+      JAMBASE_SSL_ENABLED: "true"
+      JAMBASE_SSL_CERT_PATH: /app/ssl/server.crt
+      JAMBASE_SSL_KEY_PATH: /app/ssl/server.key
+      JAMBASE_HOST: "0.0.0.0"
+      JAMBASE_PORT: "8002"
+      JAMBASE_ALLOW_BIND_ALL: "true"
+
+      # API Configuration
+      JAMBASE_API_KEY: ${JAMBASE_API_KEY}
+
+  groq_provider:
+    build:
+      context: .
+      dockerfile: providers/groq/Dockerfile
+    container_name: groq_provider_dev
+    command: >
+      python -c "import sys; sys.path.insert(0, '/app');
+      from groq_service import main; main()"
+    ports:
+      - "8003:8003"   # HTTPS
+    volumes:
+      - ../ssl/dev:/app/ssl:ro  # Mount development SSL certificates (read-only)
+    environment:
+      # SSL Configuration
+      GROQ_SSL_ENABLED: "true"
+      GROQ_SSL_CERT_PATH: /app/ssl/server.crt
+      GROQ_SSL_KEY_PATH: /app/ssl/server.key
+      GROQ_HOST: "0.0.0.0"
+      GROQ_PORT: "8003"
+      GROQ_ALLOW_BIND_ALL: "true"
+
+      # API Configuration
+      GROQ_API_KEY: ${GROQ_API_KEY}
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.dev
+      args:
+        NODE_ENV: development
+    container_name: beatmap_frontend_dev
+    command: npm run dev                   # Run Vite’s dev server
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./frontend:/app                    # Mount local source for live reload
+      - /app/node_modules                  # Prevent overwriting container deps
+      - ../ssl/dev:/etc/nginx/ssl:ro       # Optional, if using HTTPS locally
+    environment:
+      - CHOKIDAR_USEPOLLING=true           # Required for file watching in Docker
+      - VITE_API_URL=https://backend:8443
+      - VITE_ENABLE_HTTPS=true
+      - VITE_STRICT_SSL=false
+    depends_on:
+      - backend
